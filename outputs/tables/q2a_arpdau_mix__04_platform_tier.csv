@@ -1,0 +1,9 @@
+platform,country_tier,arpdau_first_30d,arpdau_last_30d,change_pct,dau_share_last_pct
+Android,1,0.4311,0.4448,3.2,9.7
+Android,2,0.2996,0.3274,9.3,8.7
+Android,3,0.2159,0.2445,13.3,13.7
+Android,4,0.1426,0.1497,4.9,40.9
+iOS,1,0.5911,0.6299,6.6,10.7
+iOS,2,0.4404,0.4884,10.9,6.8
+iOS,3,0.2805,0.3023,7.8,4.3
+iOS,4,0.2475,0.1997,-19.3,5.1

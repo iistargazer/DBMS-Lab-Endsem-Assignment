@@ -18,8 +18,8 @@ d7_retention,organic,8,6,1,1.38
 d7_retention,paid_social,8,1,0,1.88
 d7_retention,paid_video,8,1,7,2.75
 payer_conversion_30,organic,8,3,1,1.75
-payer_conversion_30,paid_video,8,3,4,2.13
 payer_conversion_30,paid_social,8,2,3,2.13
+payer_conversion_30,paid_video,8,3,4,2.13
 revenue_per_install_30,organic,8,4,3,1.88
 revenue_per_install_30,paid_video,8,4,3,1.88
 revenue_per_install_30,paid_social,8,0,2,2.25

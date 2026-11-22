@@ -159,4 +159,4 @@ SELECT dayname(d_utc) AS weekday,
        round(100.0 * avg(CASE WHEN daily_cap = 8 THEN 1 ELSE 0 END), 1) AS pct_player_days_cap8
 FROM v_ad_day
 GROUP BY 1
-ORDER BY 2 DESC;
+ORDER BY 2 DESC, 1;

@@ -339,3 +339,115 @@ JOIN pd p ON p.snap_d = b.snap_d AND p.device_id = b.device_id
 LEFT JOIN ad a ON a.snap_d = b.snap_d AND a.device_id = b.device_id
 LEFT JOIN pay y ON y.snap_d = b.snap_d AND y.device_id = b.device_id
 WHERE p.active_days_7 >= 1;
+
+
+-- ===========================================================================
+-- Deliverable 2(a): ARPDAU by platform and country tier
+-- ===========================================================================
+-- One row per day x platform x tier with the DAU that day and the revenue booked
+-- that day. ARPDAU is revenue over DAU-days, so segment shares and segment rates
+-- come from the same table and the mix decomposition cannot drift from the
+-- rates it is built on.
+--
+-- Built from DAU outward: a segment-day with no activity contributes no
+-- denominator, and while a purchase can arrive from a player with no session
+-- that day (dq16), the player still has a tier, so the revenue stays in the
+-- numerator under a segment that has DAU on that date.
+
+CREATE OR REPLACE VIEW v_day_tier_facts AS
+WITH dau AS (
+    SELECT v.d, p.platform, p.country_tier, count(*) AS dau
+    FROM v_pd v
+    JOIN player_profile p USING (device_id)
+    GROUP BY 1, 2, 3
+),
+rev AS (
+    SELECT CAST(x.event_ts AS DATE) AS d, p.platform, p.country_tier,
+           sum(x.usd_amount) AS revenue
+    FROM v_purchase_clean x
+    JOIN player_profile p USING (device_id)
+    GROUP BY 1, 2, 3
+)
+SELECT dau.d, dau.platform, dau.country_tier, dau.dau,
+       coalesce(rev.revenue, 0) AS revenue
+FROM dau
+LEFT JOIN rev ON rev.d = dau.d AND rev.platform = dau.platform
+             AND rev.country_tier = dau.country_tier;
+
+
+-- ===========================================================================
+-- Deliverable 4b: the 90-day value of an install
+-- ============================================================================
+--
+-- The brief asks for 90-day revenue predicted from what is known at the end of
+-- day 7. The hard part is not the model, it is *who can be labelled at all*:
+-- a player needs 90 observed days to have a target, and activity ends
+-- 2026-04-30. So the cohort is installs from 2026-01-01 to 2026-01-31 only
+-- (D0..D89 = install date .. install date + 89). February installs onward have
+-- an incomplete window and cannot be labelled, which is why the labelled cohort
+-- is 12% of the player base and why its channel mix cannot be assumed to hold
+-- for the installs UA is buying today.
+--
+-- Feature window is D0..D6 (seven activity dates, what UA knows by the end of
+-- day 7). Label is revenue over D0..D89, following the brief's wording -- that
+-- includes the feature window, which is why the SQL reports how much of the
+-- 90-day total is already booked by day 7 rather than pretending the label is
+-- a pure forecast.
+--
+-- The cohort boundary is computed, not chosen: install + 89 <= 2026-04-30.
+
+CREATE OR REPLACE VIEW v_ltv_cohort AS
+WITH inst AS (
+    SELECT device_id, install_date, platform, country_tier, acquisition_channel
+    FROM player_profile
+    WHERE install_date BETWEEN DATE '2026-01-01' AND DATE '2026-04-30' - 89
+),
+act AS (
+    SELECT i.device_id,
+           count(v.d) FILTER (WHERE v.d <= i.install_date + 6) AS active_days_7,
+           coalesce(sum(v.session_count) FILTER (WHERE v.d <= i.install_date + 6), 0) AS sessions_7,
+           coalesce(sum(v.playtime_minutes) FILTER (WHERE v.d <= i.install_date + 6), 0) AS playtime_7,
+           max(v.player_level) FILTER (WHERE v.d <= i.install_date + 6) AS level_max_7,
+           count(v.d) AS active_days_90
+    FROM inst i
+    LEFT JOIN v_pd v
+           ON v.device_id = i.device_id
+          AND v.d BETWEEN i.install_date AND i.install_date + 89
+    GROUP BY 1
+),
+pay AS (
+    SELECT i.device_id,
+           count(x.purchase_id) FILTER (WHERE CAST(x.event_ts AS DATE) <= i.install_date + 6) AS purchases_7,
+           coalesce(sum(x.usd_amount) FILTER (WHERE CAST(x.event_ts AS DATE) <= i.install_date + 6), 0) AS revenue_7,
+           coalesce(sum(x.usd_amount), 0) AS revenue_90
+    FROM inst i
+    LEFT JOIN v_purchase_clean x
+           ON x.device_id = i.device_id
+          AND CAST(x.event_ts AS DATE) BETWEEN i.install_date AND i.install_date + 89
+    GROUP BY 1
+),
+ads AS (
+    SELECT i.device_id,
+           count(a.d_utc) FILTER (WHERE a.d_utc <= i.install_date + 6) AS ad_days_7,
+           coalesce(sum(a.completed_views) FILTER (WHERE a.d_utc <= i.install_date + 6), 0) AS ads_completed_7
+    FROM inst i
+    LEFT JOIN v_ad_day a
+           ON a.device_id = i.device_id
+          AND a.d_utc BETWEEN i.install_date AND i.install_date + 6
+    GROUP BY 1
+)
+SELECT i.device_id, i.install_date, i.platform, i.country_tier, i.acquisition_channel,
+       coalesce(a.active_days_7, 0) AS active_days_7,
+       coalesce(a.sessions_7, 0) AS sessions_7,
+       coalesce(a.playtime_7, 0) AS playtime_7,
+       a.level_max_7,
+       coalesce(a.active_days_90, 0) AS active_days_90,
+       coalesce(ad.ad_days_7, 0) AS ad_days_7,
+       coalesce(ad.ads_completed_7, 0) AS ads_completed_7,
+       coalesce(p.purchases_7, 0) AS purchases_7,
+       coalesce(p.revenue_7, 0) AS revenue_7,
+       coalesce(p.revenue_90, 0) AS revenue_90
+FROM inst i
+LEFT JOIN act a USING (device_id)
+LEFT JOIN pay p USING (device_id)
+LEFT JOIN ads ad USING (device_id);

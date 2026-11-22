@@ -1,0 +1,33 @@
+component,feature,coefficient,std_error
+payer probability (log-odds per SD),log_revenue_7,1.6007,0.3145
+payer probability (log-odds per SD),const,-0.9255,0.0918
+payer probability (log-odds per SD),country_tier_4,-0.9146,0.1173
+payer probability (log-odds per SD),level_max_7,-0.8844,0.2525
+payer probability (log-odds per SD),active_days_7,0.6347,0.2859
+payer probability (log-odds per SD),country_tier_3,-0.5668,0.0983
+payer probability (log-odds per SD),country_tier_2,-0.3943,0.0861
+payer probability (log-odds per SD),platform_iOS,0.3928,0.0732
+payer probability (log-odds per SD),log_playtime_7,0.3575,0.068
+payer probability (log-odds per SD),purchases_7,0.335,0.1417
+payer probability (log-odds per SD),sessions_per_active_day,0.2267,0.0749
+payer probability (log-odds per SD),ads_completed_7,0.1015,0.0647
+payer probability (log-odds per SD),ad_days_7,0.0479,0.0735
+payer probability (log-odds per SD),acquisition_channel_paid_social,-0.0374,0.0751
+payer probability (log-odds per SD),acquisition_channel_paid_video,-0.0281,0.1016
+payer probability (log-odds per SD),sessions_7,-0.0058,0.1265
+spend level | payer (log points per SD),const,2.4066,0.064
+spend level | payer (log points per SD),log_revenue_7,0.3341,0.0293
+spend level | payer (log points per SD),level_max_7,-0.3044,0.1968
+spend level | payer (log points per SD),country_tier_4,-0.2885,0.0974
+spend level | payer (log points per SD),active_days_7,0.2192,0.2189
+spend level | payer (log points per SD),purchases_7,-0.168,0.03
+spend level | payer (log points per SD),country_tier_3,-0.152,0.0815
+spend level | payer (log points per SD),country_tier_2,-0.1501,0.068
+spend level | payer (log points per SD),log_playtime_7,0.0797,0.0552
+spend level | payer (log points per SD),sessions_7,0.0558,0.0957
+spend level | payer (log points per SD),ad_days_7,0.0297,0.057
+spend level | payer (log points per SD),acquisition_channel_paid_social,-0.0279,0.0601
+spend level | payer (log points per SD),sessions_per_active_day,-0.0258,0.058
+spend level | payer (log points per SD),platform_iOS,0.0251,0.0586
+spend level | payer (log points per SD),ads_completed_7,-0.0109,0.0513
+spend level | payer (log points per SD),acquisition_channel_paid_video,-0.0005,0.0813

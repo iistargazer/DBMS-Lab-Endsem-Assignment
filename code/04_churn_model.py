@@ -49,9 +49,18 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 import time
 from pathlib import Path
+
+# One BLAS thread, set before numpy loads: a threaded dgemm sums in whatever order
+# the scheduler gives it, and the fitted coefficients then differ in the last
+# digits. Harmless numerically, but it makes `make all` produce a diff on a file
+# that is supposed to be a deterministic output of committed inputs.
+for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+             "NUMEXPR_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
+    os.environ.setdefault(_var, "1")
 
 import duckdb
 import numpy as np

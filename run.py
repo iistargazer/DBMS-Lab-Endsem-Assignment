@@ -6,8 +6,10 @@ Targets:
     data        build data/parquet/*.parquet and data/warehouse.duckdb
     tables      run every sql/q*.sql block into outputs/tables/
     models      re-run the bootstrap intervals and the churn model
-    all         data + tables + models  (the default deliverable pipeline)
-    everything  extract + data + tables + models
+    ltv         re-run the optional 90-day value model
+    deck        rebuild deck/DBMS_EndSem_Deck.pptx from the CSVs only
+    all         data + tables + models + ltv + deck  (the default pipeline)
+    everything  extract + data + tables + models + ltv + deck
     clean       remove the warehouse database and generated tables
 
 Usage:
@@ -74,6 +76,14 @@ def task_models() -> None:
     run("04_churn_model.py")
 
 
+def task_ltv() -> None:
+    run("05_ltv_model.py")
+
+
+def task_deck() -> None:
+    run("06_build_deck.py")
+
+
 def task_clean() -> None:
     for target in (ROOT / "data" / "warehouse.duckdb", ROOT / "outputs" / "tables"):
         if target.is_dir():
@@ -91,6 +101,8 @@ TASKS = {
     "data": task_data,
     "tables": task_tables,
     "models": task_models,
+    "ltv": task_ltv,
+    "deck": task_deck,
     "clean": task_clean,
 }
 
@@ -102,11 +114,15 @@ def main() -> None:
         task_data()
         task_tables()
         task_models()
+        task_ltv()
+        task_deck()
     elif target == "everything":
         task_extract()
         task_data()
         task_tables()
         task_models()
+        task_ltv()
+        task_deck()
     elif target in TASKS:
         TASKS[target]()
     else:

@@ -1,10 +1,12 @@
 # DBMS Lab end-semester analysis -- reproduce every output from the raw data.
 #
-#   make all         build parquet + warehouse, then run all queries and models
+#   make all         build parquet + warehouse, run queries and models, rebuild the deck
 #   make extract     re-derive player_profile.csv / purchase.csv from the PDFs
 #   make tables      re-run the queries only
 #   make models      re-run the bootstrap intervals and the churn model only
-#   make clean       remove generated tables and the warehouse database
+#   make ltv         re-run the optional 90-day value model only
+#   make deck        rebuild deck/DBMS_EndSem_Deck.pptx from the CSVs only
+#   make clean       remove generated tables, charts and the deck
 #
 # On Windows, override the interpreter if `python` is not on PATH:
 #   make PYTHON=py all
@@ -17,9 +19,9 @@ else
 PY := .venv/bin/python
 endif
 
-.PHONY: all everything setup extract data tables models clean
+.PHONY: all everything setup extract data tables models ltv deck clean
 
-all: tables models
+all: deck
 
 setup: .venv/.installed
 
@@ -38,11 +40,19 @@ models: data
 	$(PY) code/03_channel_ci.py
 	$(PY) code/04_churn_model.py
 
+ltv: data
+	$(PY) code/05_ltv_model.py
+
+deck: tables models ltv
+	$(PY) code/06_build_deck.py
+
 extract: setup
 	$(PY) code/00_extract_pdf_tables.py
 
-everything: setup extract data tables models
+everything: setup extract data tables models ltv deck
 
 clean:
 	rm -f data/warehouse.duckdb
 	rm -f outputs/tables/*.csv
+	rm -f outputs/figures/*.png
+	rm -f deck/*.pptx

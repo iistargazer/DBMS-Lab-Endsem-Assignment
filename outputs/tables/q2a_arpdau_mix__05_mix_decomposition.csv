@@ -1,0 +1,5 @@
+scenario,arpdau,change_vs_first,change_pct
+actual first 30 days (Jan),0.3488,0.0,0.0
+actual last 30 days (Apr),0.2906,-0.0581,-16.7
+April rates on January mix,0.3743,0.0255,7.3
+January rates on April mix,0.2737,-0.0751,-21.5

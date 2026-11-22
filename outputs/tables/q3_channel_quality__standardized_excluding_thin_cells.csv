@@ -8,11 +8,11 @@ paid_video,ads_completed_per_install_30,5.2825,5.2825,0.0
 paid_social,d14_retention,0.1992,0.198,-0.0012
 organic,d14_retention,0.198,0.198,0.0
 paid_video,d14_retention,0.1896,0.1896,0.0
-organic,d1_retention,0.4808,0.4808,-0.0
+organic,d1_retention,0.4808,0.4808,0.0
 paid_social,d1_retention,0.4726,0.472,-0.0005
 paid_video,d1_retention,0.4664,0.4664,0.0
 paid_social,d30_retention,0.1442,0.1439,-0.0003
-paid_video,d30_retention,0.1381,0.1381,-0.0
+paid_video,d30_retention,0.1381,0.1381,0.0
 organic,d30_retention,0.1372,0.1372,0.0
 organic,d7_retention,0.2586,0.2586,0.0
 paid_social,d7_retention,0.2534,0.2532,-0.0001

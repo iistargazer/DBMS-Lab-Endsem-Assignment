@@ -1,0 +1,3 @@
+period,period_start,period_end,days,dau_days,avg_dau,revenue_net,arpdau_net
+first_30d,2026-01-01,2026-01-30,30,82381.0,2746.0,28732.14,0.3488
+last_30d,2026-04-01,2026-04-30,30,282781.0,9426.0,82188.97,0.2906

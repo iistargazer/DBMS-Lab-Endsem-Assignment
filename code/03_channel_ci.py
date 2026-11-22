@@ -67,9 +67,13 @@ def load() -> pd.DataFrame:
         sys.exit(f"ERROR: {DB} not found -- run code/01_build_warehouse.py first")
     con = duckdb.connect(str(DB), read_only=True)
     cols = ", ".join(sorted(set(METRICS.values())))
+    # ORDER BY device_id is not decoration: DuckDB does not promise row order for
+    # an unordered scan, and the seeded generator draws indices positionally. A
+    # different row order would resample different players and move the interval
+    # bounds between two runs of the same code, so the input order is pinned here.
     df = con.execute(
-        f"SELECT platform, country_tier, acquisition_channel AS channel, {cols} "
-        "FROM v_install_cohort"
+        f"SELECT device_id, platform, country_tier, acquisition_channel AS channel, {cols} "
+        "FROM v_install_cohort ORDER BY device_id"
     ).df()
     con.close()
     for c in METRICS.values():

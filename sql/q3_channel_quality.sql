@@ -141,7 +141,7 @@ SELECT metric,
        round(avg(rnk), 2) AS mean_rank
 FROM ranked
 GROUP BY 1, 2
-ORDER BY metric, mean_rank;
+ORDER BY metric, mean_rank, channel;
 
 -- name: crude_vs_standardized
 -- The headline table. `crude` is the pooled rate; `standardized` is the same
@@ -219,10 +219,12 @@ all_cells AS (
 SELECT f.channel, f.metric,
        round(f.std_est, 4) AS standardized_all_cells,
        round(s.std_est, 4) AS standardized_cells_250plus,
-       round(s.std_est - f.std_est, 4) AS thin_cell_influence
+       -- + 0.0 folds IEEE negative zero into 0, so a rebuild cannot churn the
+       -- file on style alone (`-0.0` vs `0.0`) when the difference is exactly nil.
+       round(s.std_est - f.std_est, 4) + 0.0 AS thin_cell_influence
 FROM all_cells f
 JOIN std s ON s.channel = f.channel AND s.metric = f.metric
-ORDER BY f.metric, f.std_est DESC;
+ORDER BY f.metric, f.std_est DESC, f.channel;
 
 -- name: revenue_decomposition
 -- Where a channel's revenue per install comes from: how many payers it produces

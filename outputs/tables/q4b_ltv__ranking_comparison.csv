@@ -1,0 +1,6 @@
+ranker,spearman_vs_90d_revenue,top_decile_share_of_revenue,top_decile_mean_revenue_90,top_decile_lift_vs_mean
+two_part_model (recommended),0.3478,0.4629,20.0877,4.634
+one_part_log_regression,0.3493,0.4589,19.9143,4.594
+baseline: day-7 revenue,0.4684,0.4371,17.9073,4.131
+baseline: day-7 active days,0.152,0.1789,7.8526,1.8115
+baseline: day-7 ad views,0.1234,0.1302,4.7851,1.1039
