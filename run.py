@@ -5,8 +5,9 @@ Targets:
     extract     re-derive player_profile.csv / purchase.csv from the PDF printouts
     data        build data/parquet/*.parquet and data/warehouse.duckdb
     tables      run every sql/q*.sql block into outputs/tables/
-    all         data + tables  (the default deliverable pipeline)
-    everything  extract + data + tables
+    models      re-run the bootstrap intervals and the churn model
+    all         data + tables + models  (the default deliverable pipeline)
+    everything  extract + data + tables + models
     clean       remove the warehouse database and generated tables
 
 Usage:
@@ -68,6 +69,11 @@ def task_tables() -> None:
     run("02_run_sql.py")
 
 
+def task_models() -> None:
+    run("03_channel_ci.py")
+    run("04_churn_model.py")
+
+
 def task_clean() -> None:
     for target in (ROOT / "data" / "warehouse.duckdb", ROOT / "outputs" / "tables"):
         if target.is_dir():
@@ -84,6 +90,7 @@ TASKS = {
     "extract": task_extract,
     "data": task_data,
     "tables": task_tables,
+    "models": task_models,
     "clean": task_clean,
 }
 
@@ -94,10 +101,12 @@ def main() -> None:
     if target == "all":
         task_data()
         task_tables()
+        task_models()
     elif target == "everything":
         task_extract()
         task_data()
         task_tables()
+        task_models()
     elif target in TASKS:
         TASKS[target]()
     else:

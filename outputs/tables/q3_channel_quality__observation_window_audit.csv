@@ -1,0 +1,4 @@
+exclusion,installs,pct_of_all_profiles
+installs before 2026-01-01: D0-D30 unobservable,16000,19.93
+installs after 2026-03-31: 30-day window incomplete,26806,33.38
+mature cohort used in the comparison,37489,46.69

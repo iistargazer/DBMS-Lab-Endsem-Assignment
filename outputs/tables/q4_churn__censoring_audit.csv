@@ -1,0 +1,4 @@
+exclusion,units
+"installs before 2026-01-01: tenure unobservable, excluded",16000
+"weekly snapshots past the 14-day label horizon (2026-04-20, 2026-04-27)",2
+installs in the panel base (2026-01-01 or later),64295

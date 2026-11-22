@@ -1,4 +1,5 @@
 duckdb>=1.0
-pandas>=2.0
 matplotlib>=3.8
+numpy>=1.24
+pandas>=2.0
 python-pptx>=0.6.23

@@ -1,0 +1,13 @@
+install_month,acquisition_channel,installs,channel_share_pct,tier4_share_of_month_pct
+2026-01-01,organic,4496,45.8,8.3
+2026-01-01,paid_social,3833,39.1,7.0
+2026-01-01,paid_video,1480,15.1,2.7
+2026-02-01,organic,4012,42.4,7.7
+2026-02-01,paid_social,3685,38.9,7.6
+2026-02-01,paid_video,1774,18.7,6.5
+2026-03-01,organic,4440,24.4,4.6
+2026-03-01,paid_social,3993,21.9,3.9
+2026-03-01,paid_video,9776,53.7,41.9
+2026-04-01,organic,4395,16.4,3.1
+2026-04-01,paid_social,3848,14.4,2.6
+2026-04-01,paid_video,18563,69.2,57.0

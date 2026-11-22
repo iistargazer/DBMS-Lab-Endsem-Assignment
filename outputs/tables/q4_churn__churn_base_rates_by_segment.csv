@@ -1,0 +1,27 @@
+dimension,level,n,churn_rate_pct,wilson_lo,wilson_hi,lift_vs_base_pct
+acquisition_channel,paid_social,54889,16.3,16.0,16.7,13.3
+acquisition_channel,organic,63274,15.3,15.0,15.6,5.9
+acquisition_channel,paid_video,57481,11.7,11.4,11.9,-19.2
+platform,iOS,55326,15.2,14.9,15.5,5.1
+platform,Android,120318,14.1,13.9,14.3,-2.4
+country_tier,tier 1,47168,16.0,15.7,16.4,11.1
+country_tier,tier 2,35354,15.9,15.6,16.3,10.5
+country_tier,tier 3,34731,15.2,14.8,15.5,5.0
+country_tier,tier 4,58391,11.8,11.5,12.1,-18.3
+tenure_days,61+,22745,26.2,25.7,26.8,81.8
+tenure_days,31-60,48655,19.9,19.5,20.3,37.8
+tenure_days,15-30,42535,13.5,13.2,13.8,-6.6
+tenure_days,8-14,26411,9.0,8.6,9.3,-38.0
+tenure_days,0-7,35298,4.6,4.3,4.8,-68.4
+active_days_7,1 of 7,90449,18.1,17.9,18.4,25.4
+active_days_7,2 of 7,52400,12.6,12.4,12.9,-12.4
+active_days_7,3 of 7,22671,8.1,7.8,8.5,-43.7
+active_days_7,4 of 7,7678,5.5,5.0,6.0,-62.0
+active_days_7,6 of 7,322,3.7,2.1,6.4,-74.2
+active_days_7,5 of 7,2082,3.6,2.9,4.5,-75.0
+active_days_7,7 of 7,42,0.0,0.0,8.4,-100.0
+has_ever_paid,yes,22053,14.9,14.5,15.4,3.3
+has_ever_paid,no,153591,14.4,14.2,14.5,-0.5
+ads_completed_7,0,64760,19.1,18.8,19.4,32.1
+ads_completed_7,1-7,109469,11.8,11.7,12.0,-17.9
+ads_completed_7,8+,1415,3.0,2.2,4.0,-79.4

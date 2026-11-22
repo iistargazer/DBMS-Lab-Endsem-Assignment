@@ -1,8 +1,9 @@
 # DBMS Lab end-semester analysis -- reproduce every output from the raw data.
 #
-#   make all         build parquet + warehouse, then run all queries
+#   make all         build parquet + warehouse, then run all queries and models
 #   make extract     re-derive player_profile.csv / purchase.csv from the PDFs
 #   make tables      re-run the queries only
+#   make models      re-run the bootstrap intervals and the churn model only
 #   make clean       remove generated tables and the warehouse database
 #
 # On Windows, override the interpreter if `python` is not on PATH:
@@ -16,9 +17,9 @@ else
 PY := .venv/bin/python
 endif
 
-.PHONY: all everything setup extract data tables clean
+.PHONY: all everything setup extract data tables models clean
 
-all: data tables
+all: tables models
 
 setup: .venv/.installed
 
@@ -33,10 +34,14 @@ data: setup
 tables: data
 	$(PY) code/02_run_sql.py
 
+models: data
+	$(PY) code/03_channel_ci.py
+	$(PY) code/04_churn_model.py
+
 extract: setup
 	$(PY) code/00_extract_pdf_tables.py
 
-everything: setup extract data tables
+everything: setup extract data tables models
 
 clean:
 	rm -f data/warehouse.duckdb

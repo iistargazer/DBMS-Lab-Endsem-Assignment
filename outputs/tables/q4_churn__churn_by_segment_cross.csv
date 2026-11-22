@@ -1,0 +1,13 @@
+channel,country_tier,players,churn_rate_pct,mean_active_days_seven,pct_ever_paid
+organic,1,21351,15.2,1.7,20.63
+organic,2,16151,15.6,1.7,15.32
+organic,3,13999,15.6,1.72,11.99
+organic,4,11773,14.8,1.7,8.69
+paid_social,1,18919,16.8,1.68,19.91
+paid_social,2,13921,16.1,1.68,14.27
+paid_social,3,11844,16.2,1.69,11.16
+paid_social,4,10205,16.1,1.7,7.71
+paid_video,1,6898,16.8,1.66,20.02
+paid_video,2,5282,16.8,1.66,15.24
+paid_video,3,8888,13.0,1.8,8.38
+paid_video,4,36413,9.6,1.92,4.62
