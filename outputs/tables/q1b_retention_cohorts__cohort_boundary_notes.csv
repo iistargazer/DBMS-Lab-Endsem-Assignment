@@ -1,0 +1,4 @@
+note,players
+installs before 2026-01-01 (excluded: day-N unobservable),16000
+installs in final 30 days (d30 cells left blank),26806
+profiles with no player_day rows at all (counted as churned),1114

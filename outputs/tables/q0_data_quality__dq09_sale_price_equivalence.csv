@@ -1,0 +1,13 @@
+pack_name,sale_flag,purchases,avg_usd,avg_currency_granted
+large_chest,0,1374,19.99,1800.0
+large_chest,1,812,19.99,1800.0
+medium_chest,0,1939,9.99,800.0
+medium_chest,1,1274,9.99,800.0
+mega_vault,0,318,99.99,11000.0
+mega_vault,1,221,99.99,11000.0
+small_pouch,0,2258,4.99,350.0
+small_pouch,1,1508,4.99,350.0
+starter_pouch,0,2498,1.99,120.0
+starter_pouch,1,1659,1.99,120.0
+vault,0,750,49.99,5000.0
+vault,1,467,49.99,5000.0

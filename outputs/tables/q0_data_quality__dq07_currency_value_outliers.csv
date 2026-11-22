@@ -1,0 +1,4 @@
+currency_type,median,p99,p999,max_value,zero_value_rows,rows_above_100x_p999
+GRIND,417.0,1968.0,3229.0,75809670,0,123
+PREMIUM,22.0,120.0,202.0,3344838,240,55
+SOCIAL,52.0,261.0,414.0,7160734,37,54

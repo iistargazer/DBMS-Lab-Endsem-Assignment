@@ -1,0 +1,5 @@
+table_name,peak_hour,hours_present
+purchase,20,18
+currency_spend,19,18
+ad_view (raw),3,18
+ad_view (after -8h),19,18

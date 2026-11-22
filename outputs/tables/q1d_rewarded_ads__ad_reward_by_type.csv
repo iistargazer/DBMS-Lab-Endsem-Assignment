@@ -1,0 +1,5 @@
+reward_type,events,avg_reward,median_reward,min_reward,max_reward
+GRIND,234043,524.35,524.0,150,899
+SPEEDUP_TOKEN,126667,2.0,2.0,1,3
+SOCIAL,117488,37.04,37.0,15,59
+PREMIUM,52876,6.51,7.0,2,11

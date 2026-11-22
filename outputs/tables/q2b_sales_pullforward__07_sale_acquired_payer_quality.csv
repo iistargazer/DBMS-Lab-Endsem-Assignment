@@ -1,0 +1,3 @@
+is_sale_day,first_time_payers,repeat_transactions_in_30d,avg_repeat_txns,pct_who_buy_again_within_30d
+True,2753,670.0,0.243,18.3
+False,4202,1039.0,0.247,18.0

@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.ipynb_checkpoints/
+
+# Raw inputs stay out of git: the three source CSVs are ~100 MB and the two
+# tables supplied as PDFs are re-derivable with `make extract`. The analysis
+# reads the committed parquet snapshots instead.
+data/raw/
+
+# Regenerable build artefacts
+data/warehouse.duckdb
+data/warehouse.duckdb.wal
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
