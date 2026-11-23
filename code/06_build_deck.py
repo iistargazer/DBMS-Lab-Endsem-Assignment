@@ -8,7 +8,7 @@ instead of assembling it: `make all` regenerates the analysis and the argument t
 
 Structure:
     slides 1-8    the readout, aimed at the Product Director
-    slides 9-20   appendix: deliverables 1-4 in detail, 4b, data quality,
+    slides 9-21   appendix: deliverables 1-4 in detail, 4b, data quality,
                   judgement calls, dead ends
 
 Two files come out of the same slides: deck/DBMS_EndSem_Deck.pptx (the submission --
@@ -859,6 +859,91 @@ def slide_dq(prs, n, s):
     return slide
 
 
+def slide_d2a(prs, n, s):
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 2(a)",
+                           "ARPDAU, tier by tier, and what moved the mix")
+    tier = load("q2a_arpdau_mix__02_arpdau_by_tier")
+    t = pd.DataFrame({
+        "tier": [f"{int(v)}" for v in tier["country_tier"]],
+        "ARPDAU, first 30d": [f"${v:.4f}" for v in tier["arpdau_first_30d"]],
+        "ARPDAU, last 30d": [f"${v:.4f}" for v in tier["arpdau_last_30d"]],
+        "change": [f"{v:+.1f}%" for v in tier["arpdau_change_pct"]],
+        "DAU share, first 30d": [f"{v:.1f}%" for v in tier["dau_share_first_pct"]],
+        "DAU share, last 30d": [f"{v:.1f}%" for v in tier["dau_share_last_pct"]],
+    })
+    table(slide, t, ML, 1.52, 6.75, col_widths=[0.07, 0.19, 0.19, 0.12, 0.215, 0.215],
+          font=9.5, row_h=0.31, force_right=True)
+    textbox(slide, ML, 3.30, 6.75, 0.62,
+            "Every tier earns at least as much per DAU at the end of the window as at the "
+            "start. What moved is the denominator: tier 4 went from "
+            f"{float(tier.dau_share_first_pct.iloc[3]):.1f}% of DAU to "
+            f"{float(tier.dau_share_last_pct.iloc[3]):.1f}%.",
+            size=10.5, colour=GREY, spacing=1.12)
+
+    ident = load("q2a_arpdau_mix__06_decomposition_identity").iloc[0]
+    den = load("q2a_arpdau_mix__07_denominator_check").iloc[0]
+    start = float(ident.actual_first_30d)
+    end = float(ident.actual_last_30d)
+    within = float(ident.within_tier_effect)
+    mix = float(ident.mix_effect)
+    inter = float(ident.interaction_effect)
+
+    def signed(v: float) -> str:
+        return ("+" if v > 0 else "") + money(v, 4)
+
+    d = pd.DataFrame({
+        "step": ["ARPDAU, first 30 days", "within-tier monetisation", "mix of players",
+                 "interaction", "ARPDAU, last 30 days"],
+        "effect": [f"${start:.4f}", signed(within), signed(mix), signed(inter),
+                   f"${end:.4f}"],
+        "as % of opening rate": ["", pct(float(ident.within_tier_pct)),
+                                 pct(float(ident.mix_pct)), "",
+                                 pct(float(ident.total_pct))],
+    })
+    table(slide, d, ML, 4.06, 6.75, col_widths=[0.52, 0.26, 0.22], font=9.5, row_h=0.29,
+          force_right=True)
+
+    def signed_plain(v: float) -> str:
+        return f"+ {v:.4f}" if v > 0 else f"\u2212 {abs(v):.4f}"
+
+    textbox(slide, ML, 6.04, 6.75, 0.62,
+            f"The four terms add back to the closing rate, to rounding: {start:.4f} "
+            f"{signed_plain(within)} {signed_plain(mix)} {signed_plain(inter)} "
+            f"\u2248 {end:.4f}.",
+            size=10, colour=GREY, spacing=1.12)
+
+    drift = load("q2a_arpdau_mix__08_install_mix_drift")
+    m = pd.DataFrame({
+        "month": [str(v)[:7] for v in drift["install_month"]],
+        "installs": [f"{int(v):,}" for v in drift["installs"]],
+        "paid_video": [f"{v:.1f}%" for v in drift["paid_video_share_pct"]],
+        "tier 4": [f"{v:.1f}%" for v in drift["tier4_share_pct"]],
+        "iOS": [f"{v:.1f}%" for v in drift["ios_share_pct"]],
+    })
+    textbox(slide, 7.55, 1.26, 5.15, 0.3, "WHAT THE INSTALL MIX DID", size=9.5, bold=True,
+            colour=ACCENT)
+    table(slide, m, 7.55, 1.58, 5.15, col_widths=[0.24, 0.22, 0.19, 0.17, 0.14], font=9.5,
+          row_h=0.30, force_right=True)
+    textbox(slide, 7.55, 3.34, 5.15, 1.05,
+            f"March and April installs are three to four times January's, and they arrive "
+            f"through paid_video into tier 4: April is "
+            f"{float(drift.paid_video_share_pct.iloc[-1]):.1f}% paid_video and "
+            f"{float(drift.tier4_share_pct.iloc[-1]):.1f}% tier-4, against January's "
+            f"{float(drift.paid_video_share_pct.iloc[0]):.1f}% and "
+            f"{float(drift.tier4_share_pct.iloc[0]):.1f}%.",
+            size=10.5, colour=INK, spacing=1.12)
+    textbox(slide, 7.55, 4.52, 5.15, 0.3, "AND THE DENOMINATOR ITSELF", size=9.5, bold=True,
+            colour=ACCENT)
+    textbox(slide, 7.55, 4.84, 5.15, 1.35,
+            "ARPDAU is revenue over DAU-days, so a tier-4-heavy day dilutes it even when "
+            f"tier 4's own rate holds. The weighted rate falls "
+            f"{pct(abs(float(den.change_weighted_pct)))} and the mean of daily ratios "
+            f"{pct(abs(float(den.change_daily_mean_pct)))}: both "
+            "definitions move together, so the fall is not an artefact of the weighting.",
+            size=10.5, colour=GREY, spacing=1.12)
+    return slide
+
+
 def slide_d2b(prs, n, s):
     slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 2(b)", "The pull-forward counterfactual, window by window")
     d = load("q2b_sales_pullforward__09_sale_window_counterfactual")
@@ -868,7 +953,7 @@ def slide_d2b(prs, n, s):
     d["window_id"] = d["window_id"].map(lambda v: f"{int(v)}")
     for col in ["sale_day_revenue", "counterfactual_day_revenue", "excess_revenue",
                 "pre_window_shortfall", "post_window_shortfall", "net_revenue"]:
-        d[col] = d[col].map(lambda v: f"${v:,.0f}")
+        d[col] = d[col].map(lambda v: money(v, 0))
     table(slide, d.rename(columns={
         "window_id": "#", "window_start": "starts", "sale_day_revenue": "sale-day revenue",
         "counterfactual_day_revenue": "counterfactual", "excess_revenue": "excess",
@@ -1046,8 +1131,8 @@ def slide_judgement(prs, n, s):
     ], size=11.5, gap=9)
     rule(slide, ML, 5.06, CW, RGBColor(0xD7, 0xDE, 0xE7), 0.012)
     textbox(slide, ML, 5.14, CW, 0.42,
-            "Worked through in full on slides 2\u20133 (2a), 4 and 15 (2b), 5 and 16 (3), "
-            "6 and 17 (4), 18 (4b) and 14 (data quality).",
+            "Worked through in full on slides 2\u20133 and 15 (2a), 4 and 16 (2b), 5 and 17 (3), "
+            "6 and 18 (4), 19 (4b) and 14 (data quality).",
             size=10.5, colour=GREY, spacing=1.1)
     return slide
 
@@ -1357,12 +1442,13 @@ def main() -> None:
     slide_d1c(prs, 12, S)
     slide_d1d(prs, 13, S)
     slide_dq(prs, 14, S)
-    slide_d2b(prs, 15, S)
-    slide_d3(prs, 16, S)
-    slide_d4(prs, 17, S)
-    slide_d4b(prs, 18, S)
-    slide_judgement(prs, 19, S)
-    slide_deadends(prs, 20, S)
+    slide_d2a(prs, 15, S)
+    slide_d2b(prs, 16, S)
+    slide_d3(prs, 17, S)
+    slide_d4(prs, 18, S)
+    slide_d4b(prs, 19, S)
+    slide_judgement(prs, 20, S)
+    slide_deadends(prs, 21, S)
 
     prs.save(DECK)
 

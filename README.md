@@ -86,7 +86,7 @@ back to a named query and a committed output file.
 
 ## The deck
 
-`code/06_build_deck.py` renders `deck/DBMS_EndSem_Deck.pptx` — 8 readout slides and 12
+`code/06_build_deck.py` renders `deck/DBMS_EndSem_Deck.pptx` — 8 readout slides and 13
 appendix slides — with `python-pptx` and `matplotlib`. It also writes
 `deck/DBMS_EndSem_Readout.pptx`, the eight readout slides on their own, for an upload
 that counts pages; the full deck is the submission. Every number on the eight
