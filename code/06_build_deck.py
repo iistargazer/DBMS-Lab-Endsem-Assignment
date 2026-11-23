@@ -934,10 +934,41 @@ def slide_dq(prs, n, s):
         ("cohort cells", "blank, never 0%, where day-N is unobserved."),
         ("device links", "3,211 originals, one self-link."),
     ], size=10.5, gap=8)
-    textbox(slide, ML, 5.30, CW, 0.9,
+    textbox(slide, ML, 4.30, CW, 0.60,
             "The two that change a conclusion: the ad clock (a mixed clock would move ad days by "
             "one) and sale_flag on refunds (a naive count triples the promotion count and would "
             "have made the sales analysis meaningless).", size=11, colour=GREY, spacing=1.15)
+
+    refunds = load("q0_data_quality__dq03_refund_rows").iloc[0]
+    late = load("q0_data_quality__dq06_ad_rows_outside_window").iloc[0]
+    prices = load("q0_data_quality__dq09_sale_price_equivalence")
+    cover = load("q0_data_quality__dq10_activity_coverage").iloc[0]
+    packs = prices["pack_name"].nunique()
+    price_gap = float((prices.groupby("pack_name")["avg_usd"].max()
+                       - prices.groupby("pack_name")["avg_usd"].min()).max())
+    textbox(slide, ML, 4.86, CW, 0.3, "THE OTHER CHECKS, AND WHAT EACH DECIDED", size=9.5,
+            bold=True, colour=ACCENT)
+    rest = pd.DataFrame({
+        "check": ["refunds (dq03)", "ads past the window (dq06)", "pack prices (dq09)",
+                  "activity coverage (dq10)"],
+        "what it measured": [
+            f"{int(refunds.refund_rows)} rows, {money(float(refunds.refund_usd), 0)}, "
+            f"{int(refunds.players_affected)} players",
+            f"{int(late.rows_after_window_end):,} rows, {str(late.first_such_ts)[:16]} to "
+            f"{str(late.last_such_ts)[11:16]}",
+            f"{packs} packs, sale and normal days differ by {money(price_gap, 2)}",
+            f"{int(cover.profiles_without_activity):,} of {int(cover.profiles):,} profiles "
+            f"never appear",
+        ],
+        "decision": [
+            "netted out of every revenue figure",
+            "outside the 120-day window, excluded",
+            "read as a period marker, not a discount",
+            "kept as non-retained, never dropped",
+        ],
+    })
+    table(slide, rest, ML, 5.16, CW, col_widths=[0.20, 0.46, 0.34], font=9, row_h=0.26,
+          header_h=0.30)
     return slide
 
 
