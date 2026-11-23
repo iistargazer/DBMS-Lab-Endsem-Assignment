@@ -86,8 +86,10 @@ back to a named query and a committed output file.
 
 ## The deck
 
-`code/06_build_deck.py` renders `deck/DBMS_EndSem_Deck.pptx` — 8 readout slides and 11
-appendix slides — with `python-pptx` and `matplotlib`. Every number on the eight
+`code/06_build_deck.py` renders `deck/DBMS_EndSem_Deck.pptx` — 8 readout slides and 12
+appendix slides — with `python-pptx` and `matplotlib`. It also writes
+`deck/DBMS_EndSem_Readout.pptx`, the eight readout slides on their own, for an upload
+that counts pages; the full deck is the submission. Every number on the eight
 readout slides, and every appendix table except the data-quality summary, is read from
 `outputs/tables/*.csv` at build time — the summary restates the register in
 `sql/q0_data_quality.sql` — and the script stops if a file it needs is missing, so the

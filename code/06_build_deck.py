@@ -8,7 +8,13 @@ instead of assembling it: `make all` regenerates the analysis and the argument t
 
 Structure:
     slides 1-8    the readout, aimed at the Product Director
-    slides 9-19   appendix: deliverables 1-4 in detail, 4b, data quality, dead ends
+    slides 9-20   appendix: deliverables 1-4 in detail, 4b, data quality,
+                  judgement calls, dead ends
+
+Two files come out of the same slides: deck/DBMS_EndSem_Deck.pptx (the submission --
+readout first, appendix behind) and deck/DBMS_EndSem_Readout.pptx (slides 1-8 only,
+for an upload that counts pages). The readout is saved before the appendix is built,
+so the two files cannot drift apart.
 
 Charts are drawn with matplotlib into outputs/figures/ at the exact aspect ratio of
 the slot they occupy, so nothing is stretched.
@@ -38,6 +44,7 @@ TABLES = ROOT / "outputs" / "tables"
 FIGURES = ROOT / "outputs" / "figures"
 DECK_DIR = ROOT / "deck"
 DECK = DECK_DIR / "DBMS_EndSem_Deck.pptx"
+READOUT = DECK_DIR / "DBMS_EndSem_Readout.pptx"
 
 # ---------------------------------------------------------------- palette ----
 INK = RGBColor(0x10, 0x23, 0x3B)
@@ -995,6 +1002,44 @@ def slide_d4b(prs, n, s):
     return slide
 
 
+def slide_judgement(prs, n, s):
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  judgement calls",
+                           "Six calls I made, and why")
+    textbox(slide, ML, 1.46, CW, 0.3,
+            "Collected here because the argument for each one sits on the slide that uses "
+            "it; every row names the choice, the reason, and what would have changed it.",
+            size=11, colour=GREY, spacing=1.1)
+    bullets(slide, ML, 2.04, CW, 4.0, [
+        ("Deep-dive (a), ARPDAU \u2014 not (b).",
+         "It reproduces exactly and decomposes into mix. 2(b) is too strong to bury, but it "
+         "is a readout slide, not the deep dive. I would have switched if 2(b) had a clean "
+         "counterfactual."),
+        ("Net revenue as the headline, gross disclosed.",
+         "Refunds are real cash, so net is what the business keeps; the appendices carry the "
+         "gross-to-net bridge so nothing is hidden. I would switch if refunds were a rounding "
+         "error."),
+        ("Churn is 14 days of inactivity.",
+         "It matches the re-engagement decision we would actually make. A 30-day label is "
+         "cleaner but too slow to act on; 7 days over-flags a normal lapsed week."),
+        ("4(b) judged on top-decile capture, not rank correlation.",
+         "The decision is which installs to bid on, so capture is the metric that maps to "
+         "money. The Spearman loss against the day-7 heuristic (0.3478 vs 0.4684) is stated, "
+         "not buried."),
+        ("Sale days defined by window, not sale_flag.",
+         "The flag fires on refund rows and would have counted 58 sale days instead of 16, "
+         "tripling the promotion. I would switch back if the flag were clean."),
+        ("Unobserved cohort cells stay blank, never zero.",
+         "A zero reads as perfect churn where the data has simply not matured; blank is the "
+         "honest label. I would switch only once every cohort has full follow-up."),
+    ], size=11.5, gap=9)
+    rule(slide, ML, 5.06, CW, RGBColor(0xD7, 0xDE, 0xE7), 0.012)
+    textbox(slide, ML, 5.14, CW, 0.42,
+            "Worked through in full on slides 2\u20133 (2a), 4 and 15 (2b), 5 and 16 (3), "
+            "6 and 17 (4), 18 (4b) and 14 (data quality).",
+            size=10.5, colour=GREY, spacing=1.1)
+    return slide
+
+
 def slide_deadends(prs, n, s):
     slide = appendix_shell(prs, n, "Appendix  \u00b7  dead ends and next week", "What I tried, and what I would do next")
     textbox(slide, ML, 1.54, 5.9, 0.3, "DEAD ENDS", size=9.5, bold=True, colour=ACCENT)
@@ -1258,6 +1303,13 @@ def main() -> None:
     slide_churn(prs, 6, S, figs)
     slide_recommendation(prs, 7, S)
     slide_uncertainty(prs, 8, S)
+    # The standalone readout must not promise an appendix that file does not contain.
+    cover_note = next(sh for sh in prs.slides[0].shapes
+                      if sh.has_text_frame
+                      and sh.text_frame.text.strip().startswith("Readout:"))
+    cover_note.text_frame.paragraphs[0].runs[0].text = "Readout: 8 slides"
+    prs.save(READOUT)          # the readout alone, before any appendix slide exists
+    cover_note.text_frame.paragraphs[0].runs[0].text = "Readout: 8 slides, then appendix"
 
     slide_method(prs, 9, S)
     slide_d1a(prs, 10, S)
@@ -1269,7 +1321,8 @@ def main() -> None:
     slide_d3(prs, 16, S)
     slide_d4(prs, 17, S)
     slide_d4b(prs, 18, S)
-    slide_deadends(prs, 19, S)
+    slide_judgement(prs, 19, S)
+    slide_deadends(prs, 20, S)
 
     prs.save(DECK)
 
@@ -1280,7 +1333,9 @@ def main() -> None:
             print("  " + w)
     print(f"\n{len(prs.slides)} slides -> {DECK.relative_to(ROOT)}  "
           f"({DECK.stat().st_size / 1024:.0f} KB)")
-    print(f"readout: 8 slides, appendix: {len(prs.slides) - 8}")
+    print(f"8 slides -> {READOUT.relative_to(ROOT)}  "
+          f"({READOUT.stat().st_size / 1024:.0f} KB)")
+    print(f"appendix: {len(prs.slides) - 8} slides")
 
 
 if __name__ == "__main__":

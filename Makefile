@@ -5,7 +5,7 @@
 #   make tables      re-run the queries only
 #   make models      re-run the bootstrap intervals and the churn model only
 #   make ltv         re-run the optional 90-day value model only
-#   make deck        rebuild deck/DBMS_EndSem_Deck.pptx from the CSVs only
+#   make deck        rebuild both deck .pptx files from the CSVs only
 #   make clean       remove generated tables, charts and the deck
 #
 # On Windows, override the interpreter if `python` is not on PATH:
