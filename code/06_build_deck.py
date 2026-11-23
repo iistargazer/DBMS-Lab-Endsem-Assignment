@@ -129,10 +129,12 @@ def chart_arpdau(path: Path) -> None:
     for side in ("top", "left", "bottom"):
         ax2.spines[side].set_visible(False)
     first, last = share["dau_share_pct"].iloc[0], share["dau_share_pct"].iloc[-1]
-    ax2.annotate(f"{first:.1f}%", (share["month"].iloc[0], first), textcoords="offset points",
-                 xytext=(4, -14), fontsize=9.5, color="#5A6A7C", fontweight="bold")
-    ax2.annotate(f"{last:.1f}%", (share["month"].iloc[-1], last), textcoords="offset points",
-                 xytext=(-30, 8), fontsize=9.5, color="#5A6A7C", fontweight="bold")
+    ax2.annotate(f"{first:.1f}% of DAU", (share["month"].iloc[0], first), textcoords="offset points",
+                 xytext=(6, -16), ha="left", va="center", fontsize=9.5, color="#5A6A7C",
+                 fontweight="bold")
+    ax2.annotate(f"{last:.1f}% of DAU", (share["month"].iloc[-1], last), textcoords="offset points",
+                 xytext=(-8, 13), ha="right", va="center", fontsize=9.5, color="#5A6A7C",
+                 fontweight="bold")
     fig.tight_layout()
     fig.savefig(path, dpi=220, facecolor="white")
     plt.close(fig)
@@ -183,6 +185,8 @@ def chart_sales(path: Path) -> None:
            width=0.72, color=colours, zorder=3)
     ax.axhline(1.0, color=H_INK, lw=1.1, ls=(0, (3, 2)), zorder=4)
     ax.annotate("normal day = 1.0", (-6.5, 1.04), ha="left", fontsize=9, color="#5A6A7C")
+    # Headroom so the sale-day bars are not flush with the top of the plot.
+    ax.set_ylim(0, 1.12 * float(d["revenue_index_vs_midcycle"].max()))
     ax.set_xticks(d["offset_days_from_window_start"])
     ax.set_xlabel("days from sale-window start", fontsize=9.5, color="#4A5A6E")
     ax.set_ylabel("revenue vs mid-cycle day", fontsize=9.5, color="#4A5A6E")
@@ -200,27 +204,31 @@ def chart_channel(path: Path) -> None:
     labels = ["organic", "paid video", "paid social"]
     fig, ax = plt.subplots(figsize=(6.20, 4.05))
     x = np.arange(len(order))
+    # Crude and standardised sit side by side, joined by a hairline diagonal: the only
+    # vertical bars on the chart are the confidence intervals, so the link cannot be
+    # mistaken for a second interval.
     for i, ch in enumerate(order):
         row = s.loc[ch]
-        ax.plot([i, i], [row.crude, row.standardized], color="#D5DCE5", lw=2.4, zorder=1,
-                solid_capstyle="round")
-        ax.scatter(i, row.crude, s=78, facecolor="white", edgecolor=H_GREY, lw=1.8, zorder=3)
-        ax.errorbar(i, row.standardized, yerr=[[row.standardized - row.standardized_lo],
-                                              [row.standardized_hi - row.standardized]],
+        cx, sx = i - 0.21, i + 0.21
+        ax.plot([cx, sx], [row.crude, row.standardized], color="#CFD8E2", lw=1.0,
+                ls=(0, (1.5, 2.2)), zorder=1, solid_capstyle="butt")
+        ax.scatter(cx, row.crude, s=70, facecolor="white", edgecolor=H_GREY, lw=1.7, zorder=3)
+        ax.errorbar(sx, row.standardized, yerr=[[row.standardized - row.standardized_lo],
+                                               [row.standardized_hi - row.standardized]],
                     fmt="o", ms=9, color=H_ACCENT, ecolor=H_ACCENT, elinewidth=2.0,
                     capsize=4, zorder=4)
-        ax.annotate(f"${row.crude:.2f}", (i, row.crude), textcoords="offset points",
-                    xytext=(-11, 0), ha="right", va="center", fontsize=9, color="#5A6A7C")
-        ax.annotate(f"${row.standardized:.2f}", (i, row.standardized), textcoords="offset points",
+        ax.annotate(f"${row.crude:.2f}", (cx, row.crude), textcoords="offset points",
+                    xytext=(-10, 0), ha="right", va="center", fontsize=9, color="#5A6A7C")
+        ax.annotate(f"${row.standardized:.2f}", (sx, row.standardized), textcoords="offset points",
                     xytext=(13, -1), ha="left", va="center", fontsize=9.5, color=H_ACCENT,
                     fontweight="bold")
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontsize=10)
-    ax.set_xlim(-0.55, 2.80)
+    ax.set_xlim(-0.80, 2.95)
     ax.set_ylim(1.3, 2.6)
     ax.set_ylabel("revenue per install, first 30 days ($)", fontsize=9.5, color="#4A5A6E")
     _style(ax, grid_axis="y")
-    ax.scatter([], [], s=78, facecolor="white", edgecolor=H_GREY, lw=1.8, label="crude")
+    ax.scatter([], [], s=70, facecolor="white", edgecolor=H_GREY, lw=1.7, label="crude")
     ax.errorbar([], [], yerr=0.02, fmt="o", ms=9, color=H_ACCENT, ecolor=H_ACCENT,
                 elinewidth=2.0, capsize=4, label="standardised, 95% CI")
     ax.legend(frameon=False, fontsize=9, loc="lower left")
@@ -550,11 +558,13 @@ def slide_churn(prs, n, s, fig):
     slide = new_slide(prs)
     header(slide, "Deliverable 4  \u00b7  churn",
            "Churn is a depth problem, not an acquisition problem")
+    # Labels break by hand: left to wrap, the KPI column is narrow enough to orphan a
+    # single word ("training", "rate") on the second line.
     kpis(slide, 1.70, [
-        (f"{s['auc']:.3f}", f"out-of-time AUC (95% CI {s['auc_lo']:.3f}\u2013{s['auc_hi']:.3f})"),
-        (f"{s['auc_ind']:.3f}", "AUC on 16,503 players never seen in training"),
-        (f"{pct(100*s['prec'],0)}", f"of the top decile churns, {s['decile_lift']:.1f}\u00d7 the base rate"),
-        (f"{pct(100*s['recall'],0)}", "of all churners caught by that decile"),
+        (f"{s['auc']:.3f}", f"out-of-time AUC\n95% CI {s['auc_lo']:.3f}\u2013{s['auc_hi']:.3f}"),
+        (f"{s['auc_ind']:.3f}", "AUC, 16,503 players\nnever seen in training"),
+        (f"{pct(100*s['prec'],0)}", f"of the top decile churns\n{s['decile_lift']:.1f}\u00d7 the base rate"),
+        (f"{pct(100*s['recall'],0)}", "of all churners caught\nby that decile"),
     ], number_size=25)
     picture(slide, fig["churn"], 0.56, 3.06, 5.55, 3.45)
     x = 6.55
@@ -609,6 +619,7 @@ def slide_recommendation(prs, n, s):
             "The one number that would change all three: cost per install, by channel. It sits in "
             "finance, not in telemetry \u2014 and without it, paid_video cannot be judged on ROI.",
             size=11, colour=RGBColor(0xF2, 0xA0, 0x8A), spacing=1.1)
+    footer(slide, n)
     return slide
 
 
