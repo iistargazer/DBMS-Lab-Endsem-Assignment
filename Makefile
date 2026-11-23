@@ -21,7 +21,10 @@ endif
 
 .PHONY: all everything setup extract data tables models ltv deck clean
 
-all: deck
+# Keep the pipeline serial: `deck` reads the CSVs the earlier steps write.
+.NOTPARALLEL:
+
+all: tables models ltv deck
 
 setup: .venv/.installed
 
@@ -43,7 +46,7 @@ models: data
 ltv: data
 	$(PY) code/05_ltv_model.py
 
-deck: tables models ltv
+deck:
 	$(PY) code/06_build_deck.py
 
 extract: setup

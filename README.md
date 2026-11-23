@@ -39,8 +39,9 @@ Targets:
 On Windows the interpreter can be overridden: `make PYTHON=py all`. Without GNU make,
 `python run.py <target>` runs the identical steps.
 
-Requirements: Python 3.10+, `duckdb`, `pandas` (installed by `make setup`). Only
-`make extract` needs poppler's `pdftotext`.
+Requirements: Python 3.10+ with `duckdb`, `pandas`, `numpy`, `matplotlib` and
+`python-pptx` (installed by `make setup`). Only `make extract` needs poppler's
+`pdftotext`.
 
 ---
 
@@ -86,9 +87,11 @@ back to a named query and a committed output file.
 ## The deck
 
 `code/06_build_deck.py` renders `deck/DBMS_EndSem_Deck.pptx` — 8 readout slides and 11
-appendix slides — with `python-pptx` and `matplotlib`. Every number on every slide is
-read from `outputs/tables/*.csv` at build time and the script stops if a file it needs
-is missing, so the deck cannot drift from the analysis. The five charts are written to
+appendix slides — with `python-pptx` and `matplotlib`. Every number on the eight
+readout slides, and every appendix table except the data-quality summary, is read from
+`outputs/tables/*.csv` at build time — the summary restates the register in
+`sql/q0_data_quality.sql` — and the script stops if a file it needs is missing, so the
+deck cannot drift from the analysis. The five charts are written to
 `outputs/figures/` as PNG and embedded; `make deck` rebuilds the slides alone, in a
 couple of seconds, without touching the warehouse.
 
@@ -140,9 +143,9 @@ and an install-mix drift table to show the mix term is a real change in acquisit
 rather than a coding artefact. `v_day_tier_facts` (in `sql/00_views.sql`) is the view
 behind it.
 
-**2(b) Are the sales making money** — `q2b`: twelve tests of the pull-forward claim,
-including a per-window counterfactual built from mid-cycle days, a pre/post trough
-decomposition, and the same decomposition for first-time payers.
+**2(b) Are the sales making money** — `q2b`: fourteen query blocks testing the
+pull-forward claim, including a per-window counterfactual built from mid-cycle days, a
+pre/post trough decomposition, and the same decomposition for first-time payers.
 
 **3. Is one acquisition channel buying better players?** — `q3`: every install from
 2026-01-01 to 2026-03-31 (37,489 of them) measured over the same D0–D30 window from
@@ -164,7 +167,7 @@ restricted to the 9,809 installs that have 90 observed days, and to features kno
 the end of day 7. The target is 77.8% zeros, so a one-part regression is reported
 only to be rejected: a two-part model (odds of paying × expected spend given payment)
 is fitted instead, and both are ranked against the free day-7-spend heuristic. The rank
-transfer check between the January and February cohorts is in `q4b_ltv__ranking_comparison`;
+transfer check between the January and February cohorts is in `q4b_ltv__model_summary`;
 the script asserts that the cohort definition matches the `v_ltv_cohort` view.
 
 ---
@@ -175,11 +178,12 @@ the script asserts that the cohort definition matches the `v_ltv_cohort` view.
 days of the window is $0.3488; over the last 30 it is $0.2906. Decomposed: if only the
 per-tier rates had moved, ARPDAU would have *risen* 7.3% (+$0.0255); letting only the
 tier mix move takes 21.5% away (−$0.0751); the interaction takes the last $0.0085.
-April's rates applied to January's mix give $0.3743, and every tier improved — +5.4%,
-+10.4%, +11.7%, +0.8%. What changed is who is playing: tier 4 goes from 17.7% of DAU
-to 46.0%, paid_video from 15.1% of installs to 69.2%, and tier-4 installs from 18.1%
-to 62.7%. The mean-of-daily-ratios version of the same measure falls 17.6% (0.3506 →
-0.2889), so the direction is not an artefact of the weighting.
+April's rates applied to January's mix give $0.3743, and every country tier improved —
++5.4%, +10.4%, +11.7%, +0.8% (only iOS tier 4 fell, −19.3%, on 5.1% of DAU). What
+changed is who is playing: tier 4 goes from 17.7% of DAU to 46.0%, paid_video from
+15.1% of installs to 69.2%, and tier-4 installs from 18.1% to 62.7%. The
+mean-of-daily-ratios version of the same measure falls 17.6% (0.3506 → 0.2889), so the
+direction is not an artefact of the weighting.
 
 **Sales are mostly timing, not incremental.** Promotion days earn $5,307/day against
 $1,244 on ordinary days, with the same DAU, the same revenue per buyer ($14.62 vs
@@ -193,18 +197,19 @@ identical on sale and non-sale transactions for all six packs (`dq09`). Whatever
 promotion does, it is not a discount in the transaction record.
 
 **The ad cap is not binding.** 1.3% of cap-5 player-days and 0.02% of cap-8 player-days
-reach the cap; players average 1.35 completed ads per ad-watching day, and 44% of DAU
-never watch one.
+reach the cap; players average 1.35 completed ads per ad-watching day, and 41% of
+active player-days carry no ad event at all.
 
 **The acquisition channels differ in who they buy, not in what those players are
 worth.** Raw, paid_video looks like a bad channel: $1.60 revenue per install against
 organic's $2.46, and 9.2% converting to a payer against 13.5%. But 65% of its installs
 are tier 4 against 18% for organic. Standardised to a common platform/tier mix the gap
 disappears — $2.12 against $2.15, conversion 11.7% against 12.2%, day-30 retention
-13.8% against 13.7% — and the bootstrap intervals on the differences all cross zero
-(paid_video minus organic revenue per install: −$0.02, 95% CI −$0.34 to +$0.33).
-Paid_video's payers actually spend slightly *more* each ($17.41 vs $16.85 standardised).
-The one real difference is ads: 5.28 completed ads per install against organic's 5.80.
+13.8% against 13.7% — and the bootstrap intervals on revenue per install, conversion and
+day-30 retention all cross zero (paid_video minus organic revenue per install: −$0.02,
+95% CI −$0.34 to +$0.33). Paid_video's payers actually spend slightly *more* each
+($17.41 vs $16.85 standardised). The gaps that survive are engagement, not value: 5.28
+completed ads per install against organic's 5.80, and 6.91 active days against 7.22.
 
 **Churn is driven by depth, not by how you were acquired.** The model separates churners
 from non-churners out of time at AUC 0.741 (95% CI 0.735–0.747), and 0.702 on the 16,503
@@ -221,13 +226,15 @@ stated economics (a $0.50 contact that saves a quarter of a $12 player) is lower
 
 **The 90-day value model is a ranker, not a bid rule.** Only 9,809 installs (12.2%)
 have 90 observed days, 77.8% of them are worth nothing and the mean is $4.63. The
-two-part model beats a one-part regression on every ranking metric, and the top decile
-it picks holds 46.3% of the cohort's 90-day revenue against 43.7% for the free
-day-7-spend heuristic. On global Spearman the heuristic wins (0.47 vs 0.35), because
-it puts every non-payer in one tie block; the model wins where the money is, at the
-top. Ranks transfer between cohorts (0.34 in January, 0.34 in February) but levels do
-not: the labelled cohort is 15.1% paid_video against April's 69.2%, so those dollars
-describe the old mix rather than the current one.
+two-part model's top decile holds 46.3% of the cohort's 90-day revenue, against 45.9%
+for a one-part regression on the same features and 43.7% for the free day-7-spend
+heuristic. On global Spearman the heuristic wins (0.47 vs 0.35), because it puts every
+non-payer in one tie block — and there the two-part model is a hair behind the
+one-part one too (0.3478 vs 0.3493). Capture at the top, not global rank, is the metric
+a bid rule needs, so that is the one the model is judged on. Ranks transfer between
+cohorts (0.34 in January, 0.34 in February) but levels do not: the labelled cohort is
+15.1% paid_video against April's 69.2%, so those dollars describe the old mix rather
+than the current one.
 
 **Data-quality issues handled** (full register in `sql/q0_data_quality.sql`):
 `ad_view` timestamps are logged on a clock 8 hours ahead of every other table, pushing

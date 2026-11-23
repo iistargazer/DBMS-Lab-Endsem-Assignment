@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Build the readout deck (8 slides) and the appendix from the committed output CSVs.
 
-Every number on a slide is read out of outputs/tables/ at build time -- nothing is
-typed in twice. If a query changes, the deck changes; if a CSV is missing, the build
-fails rather than shipping a stale number. That is the point of generating the deck
+Every number on the readout slides, and every appendix table, is read out of
+outputs/tables/ at build time -- nothing is typed in twice. If a query changes, the
+deck changes; if a CSV is missing, the build fails rather than shipping a stale number. That is the point of generating the deck
 instead of assembling it: `make all` regenerates the analysis and the argument together.
 
 Structure:
     slides 1-8    the readout, aimed at the Product Director
-    slides 9-20   appendix: deliverables 1-4 in detail, 4b, data quality, dead ends
+    slides 9-19   appendix: deliverables 1-4 in detail, 4b, data quality, dead ends
 
 Charts are drawn with matplotlib into outputs/figures/ at the exact aspect ratio of
 the slot they occupy, so nothing is stretched.
@@ -65,16 +65,6 @@ def load(name: str) -> pd.DataFrame:
     if not path.exists():
         sys.exit(f"ERROR: missing {path.relative_to(ROOT)} -- run `make tables models ltv` first")
     return pd.read_csv(path)
-
-
-def one(df: pd.DataFrame, col: str, **filters) -> float:
-    """Single value from a frame, by exact-match filter, asserting it is unambiguous."""
-    m = df
-    for key, value in filters.items():
-        m = m[m[key] == value]
-    if len(m) != 1:
-        raise ValueError(f"expected exactly 1 row for {filters}, got {len(m)}")
-    return float(m[col].iloc[0])
 
 
 def count_sql_blocks() -> int:
@@ -407,11 +397,6 @@ def picture(slide, path: Path, x, y, w, h):
     slide.shapes.add_picture(str(path), Inches(x), Inches(y), Inches(w), Inches(h))
 
 
-def note_block(slide, x, y, w, h, heading, body, *, heading_colour=ACCENT):
-    textbox(slide, x, y, w, 0.28, heading.upper(), size=9.5, bold=True, colour=heading_colour)
-    textbox(slide, x, y + 0.30, w, h - 0.30, body, size=11.5, colour=INK, spacing=1.12)
-
-
 # ------------------------------------------------------------------ slides --
 def slide_title(prs, s):
     slide = new_slide(prs, dark=True)
@@ -425,7 +410,7 @@ def slide_title(prs, s):
             "bought a different mix of players. Here is what that changes, and what it does not.",
             size=17, colour=RGBColor(0xD9, 0xE1, 0xEA), spacing=1.15)
     textbox(slide, ML, 5.62, 6.4, 0.3,
-            f"80,295 players  \u00b7  {s['player_days']:,} player-days  \u00b7  120 days  \u00b7  "
+            f"{s['profiles']:,} players  \u00b7  {s['player_days']:,} player-days  \u00b7  120 days  \u00b7  "
             f"{money(s['revenue'])} net revenue",
             size=11, colour=RGBColor(0xA9, 0xB6, 0xC6))
     textbox(slide, ML, 6.32, 6.4, 0.3, "Rohan Chinta  \u00b7  24MAB0A27  \u00b7  22 November 2026",
@@ -437,12 +422,12 @@ def slide_title(prs, s):
 def slide_paradox(prs, n, s, fig):
     slide = new_slide(prs)
     header(slide, "Deliverable 2(a)  \u00b7  the paradox",
-           "ARPDAU fell 16.7%. No tier earned less.")
+           "ARPDAU fell 16.7%. No country tier earned less.")
     picture(slide, fig["arpdau"], 0.45, 1.78, 7.25, 4.30)
     x = 8.05
     textbox(slide, x, 1.80, 4.55, 0.3, "WHAT THE CHART SHOWS", size=9.5, bold=True, colour=ACCENT)
     bullets(slide, x, 2.12, 4.55, 2.1, [
-        ("Every tier is flat or up.", f"+{s['t1']:.1f}%, +{s['t2']:.1f}%, +{s['t3']:.1f}%, "
+        ("Every country tier is flat or up.", f"+{s['t1']:.1f}%, +{s['t2']:.1f}%, +{s['t3']:.1f}%, "
                                       f"+{s['t4']:.1f}% over the window."),
         ("The mix moved underneath them.", f"Tier 4 went from {s['t4_share_first']:.1f}% to "
                                            f"{s['t4_share_last']:.1f}% of DAU."),
@@ -500,7 +485,7 @@ def slide_sales(prs, n, s, fig):
            f"Sales move revenue. Only {money(s['net'],0)} of {money(s['sale_rev'],0)} is new.")
     kpis(slide, 1.72, [
         (f"{pct(100 * s['sale_days'] / 120, 0)} of days", f"earn {money(s['sale_day_rev'],0)}/day "
-         f"against {money(s['normal_day_rev'],0)} on the other 104"),
+         f"against {money(s['normal_day_rev'],0)} on the other {s['normal_days']}"),
         (f"{pct(s['sale_share'])}", "of all net revenue lands on those days"),
         (f"{s['buyer_multiple']:.1f}\u00d7 buyers", "same DAU, same basket, same $/buyer"),
         (f"{money(s['net'],0)}", f"net of the trough \u2014 {pct(s['clawback'])} clawed back"),
@@ -537,7 +522,8 @@ def slide_channel(prs, n, s, fig):
          "after matching platform and country tier."),
         (f"The difference is {money(s['gap_std'])}",
          f"(95% CI {money(s['gap_lo'])} to {money(s['gap_hi'])}) \u2014 indistinguishable."),
-        ("Paid video is 65% tier-4 traffic.", "Organic is 18%."),
+        (f"Paid video is {s['video_t4_share']:.0f}% tier-4 traffic.",
+         f"Organic is {s['organic_t4_share']:.0f}%."),
     ], size=12, gap=8)
     textbox(slide, x, 4.74, 5.6, 0.3, "WHERE THERE IS A REAL DIFFERENCE", size=9.5, bold=True,
             colour=ACCENT)
@@ -559,7 +545,7 @@ def slide_churn(prs, n, s, fig):
     kpis(slide, 1.70, [
         (f"{s['auc']:.3f}", f"out-of-time AUC (95% CI {s['auc_lo']:.3f}\u2013{s['auc_hi']:.3f})"),
         (f"{s['auc_ind']:.3f}", "AUC on 16,503 players never seen in training"),
-        (f"{pct(100*s['prec'],0)}", "of the top decile churns, 2.5\u00d7 the base rate"),
+        (f"{pct(100*s['prec'],0)}", f"of the top decile churns, {s['decile_lift']:.1f}\u00d7 the base rate"),
         (f"{pct(100*s['recall'],0)}", "of all churners caught by that decile"),
     ], number_size=25)
     picture(slide, fig["churn"], 0.56, 3.06, 5.55, 3.45)
@@ -702,22 +688,26 @@ def slide_d1a(prs, n, s):
     bullets(slide, ML, 2.74, 6.4, 3.2, [
         ("iOS earns 2.0\u00d7 Android per DAU.", f"{money(s['ios_arpdau'],4)} vs "
                                                  f"{money(s['android_arpdau'],4)}."),
-        ("The purchase-rate denominator matters.", "41% of sale-day transactions belong to players "
+        ("The purchase-rate denominator matters.",
+         f"{s['sale_gap_pct']:.0f}% of sale-day transactions belong to players "
                                                    "with no session row that date, so purchasers are "
                                                    "counted only if they were active that day."),
-        ("Revenue is net of 228 refund rows", f"({money(-3274.72)}), gross "
-                                              f"{money(219434)} disclosed alongside."),
+        ("Revenue is net of refunds.", f"{money(s['gross'])} gross less "
+                                       f"{money(s['refund_usd'])} refunded, "
+                                       f"{money(s['revenue'])} net."),
     ], size=11.5, gap=9)
     x = 7.3
     textbox(slide, x, 1.54, 5.3, 0.3, "WHY NOT JUST DAILY ARPDAU", size=9.5, bold=True, colour=ACCENT)
     textbox(slide, x, 1.86, 5.3, 1.3,
-            "ARPDAU for a period is revenue / DAU-days, not the mean of daily ratios: a 1,900-DAU "
-            "day should not get the same vote as an 11,000-DAU one. Both are reported in the "
+            f"ARPDAU for a period is revenue / DAU-days, not the mean of daily ratios: a "
+            f"{s['dau_min']:,}-DAU day should not get the same vote as an {s['dau_max']:,}-DAU one. "
+            f"Both are reported in the "
             "appendix of the deep dive.", size=11, colour=GREY, spacing=1.12)
     textbox(slide, x, 3.30, 5.3, 0.3, "COVERAGE", size=9.5, bold=True, colour=ACCENT)
     textbox(slide, x, 3.62, 5.3, 1.2,
-            f"{s['active_players']:,} of 80,295 profiles appear in player_day at all; the other "
-            f"1,114 stay in every retention denominator as non-retained rather than disappearing.",
+            f"{s['active_players']:,} of {s['profiles']:,} profiles appear in player_day at all; "
+            f"the other {s['no_activity']:,} stay in every retention denominator as non-retained "
+            f"rather than disappearing.",
             size=11, colour=INK, spacing=1.12)
     return slide
 
@@ -736,8 +726,8 @@ def slide_d1b(prs, n, s):
     x = 8.2
     textbox(slide, x, 1.50, 4.4, 0.3, "TWO BOUNDARY RULES", size=9.5, bold=True, colour=ACCENT)
     bullets(slide, x, 1.82, 4.4, 3.4, [
-        ("Left edge.", "Activity starts 2026-01-01, so pre-window installs have no day 1/7/14/30. "
-                       "18 cohorts are excluded, not shown as 0%."),
+        ("Left edge.", "Activity starts 2026-01-01, so the 16,000 pre-window installs have no "
+                       "day 1/7/14/30. They are excluded, not shown as 0%."),
         ("Right edge.", "A cell is blank unless every player in the cohort has had N days of "
                         "observation. No zeros are substituted for unobserved days."),
     ], size=11, gap=9)
@@ -760,11 +750,11 @@ def slide_d1c(prs, n, s):
         "top_50pct_share": "top 50% share"}), ML, 1.56, 6.6,
         col_widths=[0.24, 0.16, 0.2, 0.14, 0.14, 0.14], font=9.5, row_h=0.34)
     bullets(slide, ML, 2.68, 6.6, 3.2, [
-        ("Concentration depends on the denominator.", "The top 1% of payers carry 9.1% of revenue; "
-                                                      "the top 1% of all players carry 40.2%, because "
-                                                      "most players never pay."),
-        ("82.2% never pay at all.", f"Median time to first purchase is {s['ttfp_median']:.0f} days "
-                                    f"among in-window installs."),
+        ("Concentration depends on the denominator.",
+         f"The top 1% of payers carry {pct(s['top1_payers'])} of revenue; the top 1% of all "
+         f"players carry {pct(s['top1_all'])}, because most players never pay."),
+        (f"{pct(s['pct_never_paid'])} never pay at all.",
+         f"Median time to first purchase is {s['ttfp_median']:.0f} days among in-window installs."),
         ("Repeat gaps cluster.", f"Median {s['repeat_gap']:.0f} days between purchases, mean "
                                  f"{s['repeat_mean']:.1f} \u2014 a short, spiky payer cadence."),
     ], size=11.5, gap=9)
@@ -805,7 +795,8 @@ def slide_d1d(prs, n, s):
                                                       "queue to clear."),
         ("Players average 1.35 completed ads per ad-watching day", "against a cap of five \u2014 "
                                                                     "the ceiling is not binding."),
-        ("44% of DAU never watch one.", "That is the growth lever, not the cap."),
+        (f"{pct(s['no_ad_share'], 0)} of active player-days have no ad view.",
+         "That is the growth lever, not the cap."),
     ], size=11.5, gap=9)
     x = 7.9
     textbox(slide, x, 1.54, 4.7, 0.3, "THE CAP SPLIT IS A PER-PLAYER ASSIGNMENT", size=9.5,
@@ -916,15 +907,16 @@ def slide_d3(prs, n, s):
     bullets(slide, x, 1.80, 4.3, 3.4, [
         ("Rankings do not survive adjustment.", "Paid video moves from worst to mid-pack on "
                                                 "revenue per install and on retention."),
-        ("Nothing is significant between channels.",
-         "All paired bootstrap intervals cross zero."),
-        ("The only durable gap is ads.", f"{s['video_ads']:.2f} vs {s['organic_ads']:.2f} "
-                                          f"completed per install."),
+        ("Revenue, conversion and retention show no gap.",
+         "Their paired bootstrap intervals all cross zero."),
+        ("The durable gaps are engagement.",
+         f"{s['video_ads']:.2f} vs {s['organic_ads']:.2f} completed ads per install, "
+         f"and {s['video_active']:.2f} vs {s['organic_active']:.2f} active days."),
     ], size=10.5, gap=8)
     textbox(slide, x, 5.05, 4.3, 1.1,
             "24 cells, 3 channels, 8 platform \u00d7 tier strata. Thin cells (under 250 installs) are "
-            "flagged and the standardisation is re-run without them: results move by less than "
-            "0.03.", size=10, colour=GREY, spacing=1.12)
+            "flagged and the standardisation is re-run without them: the largest movement is 0.07 "
+            "(paid_social's ad rate); paid_video does not move.", size=10, colour=GREY, spacing=1.12)
     return slide
 
 
@@ -1014,7 +1006,8 @@ def slide_deadends(prs, n, s):
         ("Cap 5 vs cap 8 as an experiment.", "It is a per-player assignment, so the comparison is "
                                              "descriptive, not causal."),
         ("A single regression on 90-day revenue.", "Ranks worse than the day-7-spend heuristic; "
-                                                   "the two-part model fixed it."),
+                                                   "the two-part split lifted the top decile, "
+                                                   "not the global rank."),
     ], size=11, gap=9)
     x = 6.9
     textbox(slide, x, 1.54, 5.6, 0.3, "WITH ANOTHER WEEK", size=9.5, bold=True, colour=ACCENT)
@@ -1107,6 +1100,13 @@ def main() -> None:
     q4b_cap = load("q4b_ltv__capture_curve")
     q4b_cmp = load("q4b_ltv__02_cohort_vs_population")
     q4b_lab = load("q4b_ltv__01_labelling_window").iloc[0]
+    q1a_all = load("q1a_daily_health__daily_health_all_platforms")
+    q1c_conc = load("q1c_spender_behaviour__revenue_concentration")
+    q1d_all = load("q1d_rewarded_ads__cap_saturation_all")
+    q3_strat = load("q3_channel_quality__channel_rates_by_stratum")
+    q0_ranges = load("q0_data_quality__dq01_row_counts_and_ranges").set_index("table_name")
+    q0_cover = load("q0_data_quality__dq10_activity_coverage").iloc[0]
+    q0_gap = load("q0_data_quality__dq16_sale_day_activity_gap")
 
     def q3v(metric, channel, col):
         return float(q3[(q3.metric == metric) & (q3.channel == channel)][col].iloc[0])
@@ -1120,10 +1120,17 @@ def main() -> None:
     coef = load("q4_churn_model__coefficients").set_index("feature")["odds_ratio"]
     share_sale = float(q2b_tot.pct_of_total_revenue)
     sale_days = int(q2b_days[q2b_days.is_sale_day == True].days.iloc[0])  # noqa: E712
+    player_days = int(q0_ranges.loc["player_day", "rows"])
+    ad_player_days = int(q1d_all.player_days.iloc[0])
 
     S = {
-        "player_days": 667435,
-        "revenue": 214343.48,
+        "profiles": int(q0_ranges.loc["player_profile", "rows"]),
+        "player_days": player_days,
+        "revenue": float(q1c_conc.total_revenue.iloc[0]),
+        "gross": float(q1a_all.revenue_gross.sum()),
+        "refund_usd": float(q1a_all.revenue_gross.sum() - q1a_all.revenue_net.sum()),
+        "dau_min": 100 * round(float(q1a_all.daily_active_players.min()) / 100),
+        "dau_max": 100 * round(float(q1a_all.daily_active_players.max()) / 100),
         "blocks": count_sql_blocks(),
         "runtime": "35 seconds",
         "t1": q2a_tier.loc[q2a_tier.country_tier == 1, "arpdau_change_pct"].iloc[0],
@@ -1148,16 +1155,22 @@ def main() -> None:
         "arpdau_last": float(q2a_period.arpdau_net.iloc[-1]),
         "android_arpdau": float(q1a.loc[q1a.platform == "Android", "arpdau_net"].iloc[0]),
         "ios_arpdau": float(q1a.loc[q1a.platform == "iOS", "arpdau_net"].iloc[0]),
-        "active_players": 79181,
+        "active_players": int(q0_cover.profiles - q0_cover.profiles_without_activity),
+        "no_activity": int(q0_cover.profiles_without_activity),
         "d1": float(q1b.d1_pct.dropna().mean()),
         "d30": float(q1b.d30_pct.dropna().mean()),
-        "ttfp_median": float(q1c_ttfp.filter(like="median").iloc[0, 0]
-                             if q1c_ttfp.filter(like="median").shape[1] else 18.0),
-        "repeat_gap": float(q1c_gap.filter(like="median").iloc[0, 0]
-                            if q1c_gap.filter(like="median").shape[1] else 15.0),
-        "repeat_mean": float(q1c_gap.filter(like="mean").iloc[0, 0]
-                             if q1c_gap.filter(like="mean").shape[1] else 22.7),
+        "ttfp_median": float(q1c_ttfp["median_days"].iloc[0]),
+        "repeat_gap": float(q1c_gap["median_days"].iloc[0]),
+        "repeat_mean": float(q1c_gap["mean_days"].iloc[0]),
+        "pct_never_paid": float(q1c_ttfp["pct_never_paid"].iloc[0]),
+        "top1_payers": float(q1c_conc.loc[q1c_conc.population == "payers only",
+                                          "top_1pct_share"].iloc[0]),
+        "top1_all": float(q1c_conc.loc[q1c_conc.population == "all players",
+                                       "top_1pct_share"].iloc[0]),
         "sale_days": sale_days,
+        "normal_days": 120 - sale_days,
+        "sale_gap_pct": float(
+            q0_gap[q0_gap.is_sale_day == True].pct_without_activity_row.iloc[0]),  # noqa: E712
         "sale_day_rev": float(q2b_days[q2b_days.is_sale_day == True].avg_daily_revenue.iloc[0]),  # noqa: E712
         "normal_day_rev": float(q2b_days[q2b_days.is_sale_day == False].avg_daily_revenue.iloc[0]),  # noqa: E712
         "sale_share": share_sale,
@@ -1180,6 +1193,16 @@ def main() -> None:
         "gap_hi": float(diff.standardized_hi),
         "video_ads": q3v("ads_completed_per_install_30", "paid_video", "standardized"),
         "organic_ads": q3v("ads_completed_per_install_30", "organic", "standardized"),
+        "video_active": q3v("active_days_30", "paid_video", "standardized"),
+        "organic_active": q3v("active_days_30", "organic", "standardized"),
+        "video_t4_share": float(
+            100 * q3_strat[(q3_strat.channel == "paid_video")
+                           & (q3_strat.country_tier == 4)].installs.sum()
+            / q3_strat[q3_strat.channel == "paid_video"].installs.sum()),
+        "organic_t4_share": float(
+            100 * q3_strat[(q3_strat.channel == "organic")
+                           & (q3_strat.country_tier == 4)].installs.sum()
+            / q3_strat[q3_strat.channel == "organic"].installs.sum()),
         "video_rpp": float(load("q3_channel_quality__revenue_decomposition")
                            .set_index("channel").loc["paid_video", "revenue_per_payer_standardized"]),
         "organic_rpp": float(load("q3_channel_quality__revenue_decomposition")
@@ -1190,6 +1213,7 @@ def main() -> None:
         "auc_ind": float(q4s["auc_independent_players"]),
         "prec": float(q4s["precision_top_decile"]),
         "recall": float(q4s["recall_top_decile"]),
+        "decile_lift": float(q4s["precision_top_decile"] / (q4s["test_churn_rate_pct"] / 100)),
         "or_sessions": float(coef["sessions_per_active_day"]),
         "or_play": float(coef["playtime_per_active_day"]),
         "or_ads": float(coef["ads_completed_7"]),
@@ -1219,6 +1243,7 @@ def main() -> None:
         "cap10_base": float(q4b_cap["baseline: day-7 revenue"].iloc[1]),
         "sp_spear": float(q4b["spearman_two_part"]),
         "sp_base": float(q4b["spearman_baseline_day7_revenue"]),
+        "no_ad_share": float(100 * (1 - ad_player_days / player_days)),
     }
 
     prs = Presentation()

@@ -33,9 +33,11 @@ guidance in the decile table comes from realised revenue per band, not from the 
 predicted level.
 
 Outputs (outputs/tables/):
-  q4b_ltv__model_summary.csv   sample sizes, ranking metrics, baselines, transfer check
-  q4b_ltv__decile_lift.csv     realised revenue per predicted decile, and bid headroom
-  q4b_ltv__coefficients.csv    both components, per standard deviation
+  q4b_ltv__model_summary.csv        sample sizes, metrics, baselines, transfer check
+  q4b_ltv__ranking_comparison.csv   every ranker on Spearman and top-decile metrics
+  q4b_ltv__capture_curve.csv        share of revenue captured at 5/10/20/30/50%
+  q4b_ltv__decile_lift.csv          realised revenue per predicted decile, bid headroom
+  q4b_ltv__coefficients.csv         both components, per standard deviation
 
 Usage:
     python code/05_ltv_model.py [--lambda 1.0]
@@ -246,11 +248,17 @@ def capture_at(y: np.ndarray, score: np.ndarray, frac: float) -> float:
 
 
 def top_decile(y: np.ndarray, score: np.ndarray) -> tuple[float, float]:
-    """(share of total revenue in the top 10% of scores, mean revenue there)."""
-    share = capture_at(y, score, 0.10)
+    """(share of total revenue in the top 10% of scores, mean revenue there).
+
+    One selection for both numbers: with 78% of the cohort tied at zero, a second,
+    unstable sort would put a different set of installs on the cut, so the share
+    and the mean would describe two different portfolios.
+    """
     k = max(1, int(round(0.10 * len(y))))
-    idx = np.argsort(-np.asarray(score, dtype=float))[:k]
-    return share, float(y[idx].mean())
+    top = y[np.argsort(-np.asarray(score, dtype=float), kind="stable")[:k]]
+    total = y.sum()
+    share = float(top.sum() / total) if total > 0 else float("nan")
+    return share, float(top.mean())
 
 
 def main() -> None:
@@ -373,9 +381,10 @@ def main() -> None:
     lift = lift.rename(columns={"decile": "predicted_decile"})
 
     # ---- summary ----------------------------------------------------------
-    two = rank_df.iloc[0]
-    one = rank_df.iloc[1]
-    base7 = rank_df.iloc[2]
+    ranked = rank_df.set_index("ranker")
+    two = ranked.loc["two_part_model (recommended)"]
+    one = ranked.loc["one_part_log_regression"]
+    base7 = ranked.loc["baseline: day-7 revenue"]
     summary = [
         ("labelled_cohort_installs", len(df)),
         ("cohort_pct_of_profiles", 100 * len(df) / 80295),
