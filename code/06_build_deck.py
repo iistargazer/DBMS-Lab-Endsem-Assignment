@@ -13,8 +13,9 @@ Structure:
 
 Two files come out of the same slides: deck/DBMS_EndSem_Deck.pptx (the submission --
 readout first, appendix behind) and deck/DBMS_EndSem_Readout.pptx (slides 1-8 only,
-for an upload that counts pages). The readout is saved before the appendix is built,
-so the two files cannot drift apart.
+for an upload that counts pages). The readout is saved before the appendix is built;
+its cover and its data-quality slide are then rewritten so the extract points at the
+working files rather than at an appendix page that file does not contain.
 
 Charts are drawn with matplotlib into outputs/figures/ at the exact aspect ratio of
 the slot they occupy, so nothing is stretched.
@@ -1106,6 +1107,39 @@ def check_overflow(prs: Presentation) -> list[str]:
 
 
 # -------------------------------------------------------------------- main --
+def strip_appendix_refs(path: Path) -> None:
+    """Make the standalone readout self-contained.
+
+    The submission deck can say "then appendix" and cite appendix slide 14; the
+    eight-slide extract has neither, so those strings are rewritten after it is
+    saved. Everything else is untouched, which keeps the extract's other six
+    pages identical to the submission deck's.
+    """
+    standalone = Presentation(path)
+    swaps = [
+        ("Readout: 8 slides, then appendix", "Readout: 8 slides"),
+        ("Register in the appendix.", "The full register is in the working files."),
+        ("Full data-quality register: q0_data_quality__dq01..dq16; appendix slide 14.",
+         "Full data-quality register: q0_data_quality__dq01..dq16; "
+         "see sql/q0_data_quality.sql."),
+    ]
+    done = set()
+    for slide in standalone.slides:
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            for para in shape.text_frame.paragraphs:
+                for run in para.runs:
+                    for old, new in swaps:
+                        if old in run.text:
+                            run.text = run.text.replace(old, new)
+                            done.add(old)
+    missing = [old for old, _ in swaps if old not in done]
+    if missing:
+        raise RuntimeError(f"standalone readout: no text matched {missing!r}")
+    standalone.save(path)
+
+
 def main() -> None:
     for d in (FIGURES, DECK_DIR):
         d.mkdir(parents=True, exist_ok=True)
@@ -1303,13 +1337,8 @@ def main() -> None:
     slide_churn(prs, 6, S, figs)
     slide_recommendation(prs, 7, S)
     slide_uncertainty(prs, 8, S)
-    # The standalone readout must not promise an appendix that file does not contain.
-    cover_note = next(sh for sh in prs.slides[0].shapes
-                      if sh.has_text_frame
-                      and sh.text_frame.text.strip().startswith("Readout:"))
-    cover_note.text_frame.paragraphs[0].runs[0].text = "Readout: 8 slides"
     prs.save(READOUT)          # the readout alone, before any appendix slide exists
-    cover_note.text_frame.paragraphs[0].runs[0].text = "Readout: 8 slides, then appendix"
+    strip_appendix_refs(READOUT)
 
     slide_method(prs, 9, S)
     slide_d1a(prs, 10, S)
