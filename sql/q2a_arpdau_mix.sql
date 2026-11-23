@@ -1,7 +1,7 @@
 -- Deliverable 2(a): "ARPDAU is falling -- fix it."
 --
--- The claim reproduces: ARPDAU is $0.3511 in the first 30 days of the extract and
--- $0.2932 in the last 30, a fall of 16.5%. But no tier's monetisation got worse.
+-- The claim reproduces: ARPDAU is $0.3488 in the first 30 days of the extract and
+-- $0.2906 in the last 30, a fall of 16.7%. But no tier's monetisation got worse.
 -- Every tier is flat or up, on a stable per-tier ARPDAU, while the DAU mix moved
 -- hard toward the cheapest tier. This is Simpson's paradox, and the test is
 -- mechanical: reweight April's rates by January's DAU mix, and January's rates by

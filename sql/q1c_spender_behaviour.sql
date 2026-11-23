@@ -4,6 +4,10 @@
 -- very different answers: ranking *payers only* answers "how top-heavy is the
 -- paying base", ranking *everyone* answers "how concentrated is revenue across
 -- the whole player base". The population is named in the output.
+--
+-- "Payers only" is defined on net revenue, so purchases that were fully refunded
+-- drop out: 11,054 players have a positive purchase, and 120 of those gave back at
+-- least what they spent, leaving 10,934 with net revenue above zero.
 
 -- name: revenue_concentration
 WITH payer_totals AS (

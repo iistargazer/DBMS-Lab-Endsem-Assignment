@@ -10,7 +10,7 @@ Targets:
     deck        rebuild deck/DBMS_EndSem_Deck.pptx from the CSVs only
     all         data + tables + models + ltv + deck  (the default pipeline)
     everything  extract + data + tables + models + ltv + deck
-    clean       remove the warehouse database and generated tables
+    clean       remove the warehouse, the generated tables, charts and deck
 
 Usage:
     python run.py all
@@ -85,7 +85,11 @@ def task_deck() -> None:
 
 
 def task_clean() -> None:
-    for target in (ROOT / "data" / "warehouse.duckdb", ROOT / "outputs" / "tables"):
+    """Same set of targets as `make clean`, so the two runners stay equivalent."""
+    for target in (ROOT / "data" / "warehouse.duckdb",
+                   ROOT / "data" / "warehouse.duckdb.wal",
+                   ROOT / "outputs" / "tables",
+                   ROOT / "outputs" / "figures"):
         if target.is_dir():
             for child in target.iterdir():
                 child.unlink()
@@ -93,6 +97,9 @@ def task_clean() -> None:
         elif target.exists():
             target.unlink()
             print(f"removed {target.relative_to(ROOT)}")
+    for pptx in (ROOT / "deck").glob("*.pptx"):
+        pptx.unlink()
+        print(f"removed {pptx.relative_to(ROOT)}")
 
 
 TASKS = {

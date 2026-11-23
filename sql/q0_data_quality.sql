@@ -23,11 +23,14 @@ FROM (
 );
 
 -- name: dq03_refund_rows
+-- Counted on the analysis table (v_purchase_clean), because refunds are netted out
+-- of every revenue figure the deck reports and the two must agree. The raw table
+-- holds 228 negative rows; two of them are duplicate purchase_ids removed by dq02.
 SELECT count(*) AS refund_rows,
        round(sum(usd_amount), 2) AS refund_usd,
        sum(currency_granted) AS refund_currency,
        count(DISTINCT device_id) AS players_affected
-FROM purchase
+FROM v_purchase_clean
 WHERE usd_amount < 0;
 
 -- name: dq04_purchases_before_install
@@ -153,6 +156,12 @@ LEFT JOIN (
     FROM purchase WHERE usd_amount > 0 GROUP BY 1
 ) f USING (device_id);
 
+-- name: dq15_activity_bounds
+SELECT count(*) FILTER (WHERE d < DATE '2026-01-01' OR d > DATE '2026-04-30') AS activity_outside_window,
+       count(*) FILTER (WHERE date_diff('day', p.install_date, v.d) < 0) AS activity_before_install,
+       count(DISTINCT v.device_id) AS active_players
+FROM v_pd v JOIN player_profile p USING (device_id);
+
 -- name: dq16_sale_day_activity_gap
 -- On promotion days, 41% of transactions belong to players with no player_day
 -- row that date; on ordinary days the figure is exactly zero, and none of the
@@ -177,9 +186,3 @@ FROM p
 LEFT JOIN v_pd a ON a.device_id = p.device_id AND a.d = p.d
 GROUP BY 1
 ORDER BY 1 DESC;
-
--- name: dq15_activity_bounds
-SELECT count(*) FILTER (WHERE d < DATE '2026-01-01' OR d > DATE '2026-04-30') AS activity_outside_window,
-       count(*) FILTER (WHERE date_diff('day', p.install_date, v.d) < 0) AS activity_before_install,
-       count(DISTINCT v.device_id) AS active_players
-FROM v_pd v JOIN player_profile p USING (device_id);

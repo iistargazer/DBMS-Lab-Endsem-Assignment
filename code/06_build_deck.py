@@ -503,7 +503,7 @@ def slide_sales(prs, n, s, fig):
         (f"{pct(100 * s['sale_days'] / 120, 0)} of days", f"earn {money(s['sale_day_rev'],0)}/day "
          f"against {money(s['normal_day_rev'],0)} on the other {s['normal_days']}"),
         (f"{pct(s['sale_share'])}", "of all net revenue lands on those days"),
-        (f"{s['buyer_multiple']:.1f}\u00d7 buyers", "same DAU, same basket, same $/buyer"),
+        (f"{s['buyer_multiple']:.1f}\u00d7 buyers", "same DAU, same spend per buyer-day"),
         (f"{money(s['net'],0)}", f"net of the trough \u2014 {pct(s['clawback'])} clawed back"),
     ], number_size=25)
     picture(slide, fig["sales"], 0.52, 3.16, 6.55, 3.35)
@@ -511,7 +511,7 @@ def slide_sales(prs, n, s, fig):
     textbox(slide, x, 3.10, 5.2, 0.3, "THERE IS NO DISCOUNT IN THE RECORD", size=9.5, bold=True,
             colour=ACCENT)
     bullets(slide, x, 3.42, 5.2, 1.6, [
-        (f"${s['rev_per_buyer_sale']:.2f} vs ${s['rev_per_buyer_normal']:.2f} per buyer",
+        (f"${s['rev_per_buyer_sale']:.2f} vs ${s['rev_per_buyer_normal']:.2f} per buyer-day",
          "on sale and ordinary days."),
         ("Identical pack prices.", "usd_amount and currency_granted match for all six packs "
                                    "(dq09), so 'sale' is a period marker."),
@@ -743,7 +743,7 @@ def slide_d1a(prs, n, s):
             f"ARPDAU for a period is revenue / DAU-days, not the mean of daily ratios: a "
             f"{s['dau_min']:,}-DAU day should not get the same vote as an {s['dau_max']:,}-DAU one. "
             f"Both are reported in the "
-            "appendix of the deep dive.", size=11, colour=GREY, spacing=1.12)
+            "denominator check on appendix page 15.", size=11, colour=GREY, spacing=1.12)
     textbox(slide, x, 3.30, 5.3, 0.3, "COVERAGE", size=9.5, bold=True, colour=ACCENT)
     textbox(slide, x, 3.62, 5.3, 1.2,
             f"{s['active_players']:,} of {s['profiles']:,} profiles appear in player_day at all; "
@@ -1498,8 +1498,8 @@ def main() -> None:
         "buyer_multiple": float(
             q2b_days[q2b_days.is_sale_day == True].avg_daily_buyers.iloc[0]  # noqa: E712
             / q2b_days[q2b_days.is_sale_day == False].avg_daily_buyers.iloc[0]),  # noqa: E712
-        "rev_per_buyer_sale": float(q2b_days[q2b_days.is_sale_day == True].revenue_per_buyer.iloc[0]),  # noqa: E712
-        "rev_per_buyer_normal": float(q2b_days[q2b_days.is_sale_day == False].revenue_per_buyer.iloc[0]),  # noqa: E712
+        "rev_per_buyer_sale": float(q2b_days[q2b_days.is_sale_day == True].revenue_per_buyer_day.iloc[0]),  # noqa: E712
+        "rev_per_buyer_normal": float(q2b_days[q2b_days.is_sale_day == False].revenue_per_buyer_day.iloc[0]),  # noqa: E712
         "sale_rev": float(q2b_tot.sale_day_revenue),
         "net": float(q2b_tot.net_revenue),
         "clawback": 100 * (1 - float(q2b_tot.net_revenue) / float(q2b_tot.sale_day_revenue)),

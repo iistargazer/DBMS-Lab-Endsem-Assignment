@@ -188,8 +188,8 @@ mean-of-daily-ratios version of the same measure falls 17.6% (0.3506 → 0.2889)
 direction is not an artefact of the weighting.
 
 **Sales are mostly timing, not incremental.** Promotion days earn $5,307/day against
-$1,244 on ordinary days, with the same DAU, the same revenue per buyer ($14.62 vs
-$14.16) and the same basket size. But the four days before each window run at 0.40–0.48
+$1,244 on ordinary days, with the same DAU, the same revenue per buyer-day ($14.62
+vs $14.16) and the same basket size. But the four days before each window run at 0.40–0.48
 of mid-cycle revenue and the three days after at 0.60–0.74. Net of that trough, the
 eight windows add about **$13,083** on $84,920 of sale-day revenue — roughly 85% of the
 spike is money moved, not money created.
@@ -240,7 +240,8 @@ than the current one.
 
 **Data-quality issues handled** (full register in `sql/q0_data_quality.sql`):
 `ad_view` timestamps are logged on a clock 8 hours ahead of every other table, pushing
-7,732 rows onto 2026-05-01; 228 refund rows; 122 duplicate `purchase_id`s; `sale_flag`
+7,732 rows onto 2026-05-01; 226 refund rows after dedupe (228 in the raw table); 122
+duplicate `purchase_id`s; `sale_flag`
 also fires on refund rows, which inflates a naive sale-day count from 16 to 58; 110
 players with purchases dated before their install date; purchases left-truncated at
 2026-01-01, so time-to-first-purchase must exclude pre-window installs; a `currency_spend`

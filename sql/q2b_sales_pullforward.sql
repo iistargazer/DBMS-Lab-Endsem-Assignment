@@ -8,7 +8,8 @@
 --
 -- Tests below, in the order the argument needs them:
 --   01  the sale windows themselves
---   02  sale days vs normal days on traffic-adjusted measures
+--   02  sale days vs normal days on traffic-adjusted measures (revenue and
+--       transactions per buyer-day, so the extra buyers do not flatter it)
 --   03  the offset curve: is there a trough before/after a window?
 --   04  per-window trough and recovery, and whether it is intensifying (the
 --       "players learned the schedule" story)
@@ -17,7 +18,12 @@
 --   07  do sale-acquired payers repeat at the same rate as normal-day ones?
 --   08  front-loading inside the window
 --   09  excess revenue against a local counterfactual
---   10  pack mix on sale vs normal days
+--   10  the same counterfactual totalled, and what share of revenue it clears
+--   11  pack mix on sale vs normal days
+--   12  the same excess test for *new* payers only
+--   13  that new-payer excess totalled
+--   14  whether the trough is deepening window on window (the "players learned
+--       the schedule" story)
 
 -- name: 01_sale_windows
 SELECT w.window_id,
@@ -41,8 +47,8 @@ SELECT is_sale_day,
        round(avg(buyers), 1) AS avg_daily_buyers,
        round(100.0 * avg(buyers) / avg(dau), 2) AS pct_dau_buying,
        round(avg(revenue) / avg(dau), 4) AS arpdau,
-       round(sum(revenue) / nullif(sum(buyers), 0), 2) AS revenue_per_buyer,
-       round(sum(txns) * 1.0 / nullif(sum(buyers), 0), 2) AS txns_per_buyer
+       round(sum(revenue) / nullif(sum(buyers), 0), 2) AS revenue_per_buyer_day,
+       round(sum(txns) * 1.0 / nullif(sum(buyers), 0), 2) AS txns_per_buyer_day
 FROM v_day_facts
 GROUP BY 1
 ORDER BY 1 DESC;

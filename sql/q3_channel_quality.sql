@@ -106,10 +106,12 @@ GROUP BY 1
 ORDER BY installs DESC;
 
 -- name: channel_rates_by_stratum
--- The cells the standardisation is built from. `cells_are_thin` flags a cell with
+-- The cells the standardisation is built from. `cell_is_thin` flags a cell with
 -- fewer than 250 installs or 50 payers: those contribute a weight but their own
 -- rate is noisy, which is why the bootstrap in code/03_channel_ci.py resamples
--- within cells instead of trusting a normal approximation on them.
+-- within cells instead of trusting a normal approximation on them. The sensitivity
+-- drop in `standardized_excluding_thin_cells` uses the install floor alone, since
+-- installs are what carry the weight.
 SELECT platform,
        country_tier,
        acquisition_channel AS channel,

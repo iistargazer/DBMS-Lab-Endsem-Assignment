@@ -96,13 +96,7 @@ def main() -> None:
     if DB.exists():
         DB.unlink()
     file_con = duckdb.connect(str(DB))
-    for table in SCHEMAS:
-        file_con.execute(
-            f"CREATE OR REPLACE TABLE {table} AS "
-            f"SELECT * FROM read_parquet('{(PARQUET / f'{table}.parquet').as_posix()}')"
-        )
-    views = ROOT / "sql" / "00_views.sql"
-    file_con.execute(views.read_text(encoding="utf8"))
+    build_db(file_con)
 
     print(f"\n{'table':<16}{'rows':>12}")
     for table in SCHEMAS:

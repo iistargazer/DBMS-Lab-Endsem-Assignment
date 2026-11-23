@@ -17,11 +17,15 @@ the crude and the mix-standardised metric on every replicate, and derives:
   outputs/tables/q3_channel__bootstrap_standardized.csv   point + 95% interval per channel
   outputs/tables/q3_channel__bootstrap_differences.csv    paired difference between channels
 
-Because each replicate reuses the same resampled indices for every channel, the
-channel-to-channel difference is paired: the two channels are compared on the
-same synthetic population, not on two independently perturbed ones. Resampling
-within cells also respects the design -- a player belongs to exactly one cell,
-so cells are independent and can be resampled separately.
+Each (stratum, channel) cell is resampled with its own indices, and the crude and
+mix-standardised metrics are recomputed on every replicate before the channels are
+differenced. So the difference keeps the joint behaviour of the shared mix weights
+-- the mixture's own sampling error cancels in the contrast instead of being
+counted twice, which is what makes the differenced interval tighter than two
+marginal intervals added in quadrature -- while no synthetic player is shared
+between channels, so one channel's lucky draw cannot flatter the other. Resampling
+within cells also respects the design: a player belongs to exactly one cell, so
+cells are independent and can be resampled separately.
 
 Seeded, so the intervals are reproducible from a clean checkout.
 
