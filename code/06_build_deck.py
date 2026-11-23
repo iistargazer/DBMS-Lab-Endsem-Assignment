@@ -658,15 +658,25 @@ def slide_uncertainty(prs, n, s):
 
 
 # ---------------------------------------------------------------- appendix --
-def appendix_shell(prs, n, kicker, title):
+def appendix_shell(prs, n, kicker, title, note=None):
+    """Add an appendix page, and fail if its printed number is not its position.
+
+    Page numbers are passed in by hand here, so inserting a slide silently leaves
+    every later page numbered wrong. This checks the two agree at build time.
+    """
     slide = new_slide(prs)
+    if len(prs.slides) != n:
+        raise RuntimeError(f"{title!r} landed on slide {len(prs.slides)}, not {n}")
     header(slide, kicker, title, size=24)
-    footer(slide, n)
+    footer(slide, n, note)
     return slide
 
 
 def slide_method(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  how this was built", "Every number is a query result")
+    slide = appendix_shell(
+        prs, n, "Appendix  \u00b7  how this was built", "Every number is a query result",
+        f"Runtime on a laptop: {s['runtime']} for make all. The repo is the submission; the "
+        f"deck is an artefact of it.")
     bullets(slide, ML, 1.58, 6.0, 4.6, [
         ("One pipeline.", "make all rebuilds the warehouse from committed parquet, runs every "
                           "query, refits both models, and regenerates this deck."),
@@ -679,7 +689,7 @@ def slide_method(prs, n, s):
                                   "both sides agree, 80,295 and 15,426 rows."),
         ("No hand-editing.", "The deck script reads outputs/tables/*.csv and stops if one is "
                              "missing, rather than shipping a stale number."),
-    ], size=11.5, gap=10)
+    ], size=11, gap=8)
     x = 7.0
     textbox(slide, x, 1.56, 5.6, 0.3, "WHAT MAKE ALL RUNS", size=9.5, bold=True, colour=ACCENT)
     table(slide, pd.DataFrame({
@@ -687,14 +697,26 @@ def slide_method(prs, n, s):
         "output": ["warehouse.duckdb", f"{s['blocks']} CSV blocks", "2 CIs", "6 model files",
                    "5 model files", "this deck"],
     }), x, 1.88, 5.6, col_widths=[0.42, 0.58], font=9.5, row_h=0.34)
-    textbox(slide, x, 4.42, 5.6, 0.9,
-            f"Runtime on a laptop: {s['runtime']}. The repo is the submission; the deck is an "
-            f"artefact of it.", size=10.5, colour=GREY, spacing=1.15)
+    query_files = len(list((ROOT / "sql").glob("q*.sql")))
+    textbox(slide, ML, 4.42, CW, 0.3, "WHAT IS IN THE REPO", size=9.5, bold=True, colour=ACCENT)
+    repo = pd.DataFrame({
+        "path": ["data/", "sql/", "code/", "outputs/", "deck/"],
+        "contents": [
+            "source extracts (three CSV, two recovered from PDF) and warehouse.duckdb",
+            f"00_views.sql with every cleaning rule, then {query_files} query files in named blocks",
+            "the six pipeline steps, in the order make runs them",
+            f"{s['blocks']} CSV tables and 5 figures, all regenerated; none saved by hand",
+            "DBMS_EndSem_Deck.pptx (readout + appendix) and DBMS_EndSem_Readout.pptx",
+        ],
+    })
+    table(slide, repo, ML, 4.74, CW, col_widths=[0.11, 0.89], font=9.5, row_h=0.28)
     return slide
 
 
 def slide_d1a(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(a)", "Daily health, by platform")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(a)", "Daily health, by platform",
+                           "Source: q1a_daily_health__daily_health_period_summary, "
+                           "__daily_health_all_platforms, __daily_health_by_platform.")
     d = load("q1a_daily_health__daily_health_period_summary")
     d["avg_dau"] = d["avg_dau"].map(lambda v: f"{v:,.0f}")
     d["revenue_net"] = d["revenue_net"].map(lambda v: f"${v:,.0f}")
@@ -728,11 +750,29 @@ def slide_d1a(prs, n, s):
             f"the other {s['no_activity']:,} stay in every retention denominator as non-retained "
             f"rather than disappearing.",
             size=11, colour=INK, spacing=1.12)
+
+    daily = load("q1a_daily_health__daily_health_all_platforms")
+    picks = [("busiest by DAU", daily.loc[daily.daily_active_players.idxmax()]),
+             ("quietest by DAU", daily.loc[daily.daily_active_players.idxmin()]),
+             ("best net revenue", daily.loc[daily.revenue_net.idxmax()]),
+             ("worst net revenue", daily.loc[daily.revenue_net.idxmin()])]
+    textbox(slide, ML, 4.52, CW, 0.3, "THE EXTREMES OF THE 120-DAY SERIES", size=9.5, bold=True,
+            colour=ACCENT)
+    ext = pd.DataFrame({
+        "day": [f"{k} ({r['day']})" for k, r in picks],
+        "DAU": [f"{int(r['daily_active_players']):,}" for _, r in picks],
+        "net revenue": [f"${r['revenue_net']:,.0f}" for _, r in picks],
+        "ARPDAU": [f"${r['arpdau_net']:.4f}" for _, r in picks],
+    })
+    table(slide, ext, ML, 4.84, CW, col_widths=[0.46, 0.16, 0.19, 0.19], font=9.5, row_h=0.30,
+          force_right=True)
     return slide
 
 
 def slide_d1b(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(b)", "Retention by install week")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(b)", "Retention by install week",
+                           "Source: q1b_retention_cohorts__retention_grid, "
+                           "__cohort_boundary_notes.")
     d = load("q1b_retention_cohorts__retention_grid")
     d = d[d["cohort_week"] >= "2026-01-05"].tail(11).copy()
     d["cohort_week"] = d["cohort_week"].str[:10]
@@ -759,7 +799,9 @@ def slide_d1b(prs, n, s):
 
 
 def slide_d1c(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(c)", "Who pays, and how concentrated")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(c)", "Who pays, and how concentrated",
+                           "Source: q1c_spender_behaviour__revenue_concentration, "
+                           "__spend_distribution_by_payer.")
     d = load("q1c_spender_behaviour__revenue_concentration")
     d["population_size"] = d["population_size"].map(lambda v: f"{v:,}")
     d["total_revenue"] = d["total_revenue"].map(lambda v: f"${v:,.0f}")
@@ -790,11 +832,26 @@ def slide_d1c(prs, n, s):
             "Revenue is whale-dependent, so retention effort should be judged on revenue retained, "
             "not players retained. That is why the churn model reports precision by value band.",
             size=11, colour=GREY, spacing=1.12)
+
+    spend = load("q1c_spender_behaviour__spend_distribution_by_payer")
+    textbox(slide, ML, 4.44, CW, 0.3, "SPEND BY NUMBER OF PURCHASES", size=9.5, bold=True,
+            colour=ACCENT)
+    sp = pd.DataFrame({
+        "purchases": [str(v) for v in spend["purchase_count_band"]],
+        "payers": [f"{int(v):,}" for v in spend["payers"]],
+        "% of payers": [f"{v:.1f}%" for v in spend["pct_of_payers"]],
+        "revenue": [f"${v:,.0f}" for v in spend["revenue"]],
+        "% of revenue": [f"{v:.1f}%" for v in spend["pct_of_revenue"]],
+    })
+    table(slide, sp, ML, 4.76, CW, col_widths=[0.20, 0.20, 0.18, 0.22, 0.20], font=9.5, row_h=0.30,
+          force_right=True)
     return slide
 
 
 def slide_d1d(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(d)", "The ad cap is not the constraint")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 1(d)", "The ad cap is not the constraint",
+                           "Source: q1d_rewarded_ads__cap_saturation_by_cap, __ad_status_mix, "
+                           "__ad_reward_by_type.")
     d = load("q1d_rewarded_ads__cap_saturation_by_cap")
     d = d[["cap", "player_days", "pct_player_days_at_cap", "pct_player_days_completed_at_cap",
            "avg_completed_views_per_player_day", "avg_peak_count"]].copy()
@@ -828,11 +885,36 @@ def slide_d1d(prs, n, s):
     textbox(slide, x, 3.88, 4.7, 1.2,
             "5\u20136 March have zero ad events while DAU holds near 4,980. Logging gaps, not player "
             "behaviour \u2014 reported, not imputed.", size=11, colour=GREY, spacing=1.12)
+
+    st = load("q1d_rewarded_ads__ad_status_mix")
+    textbox(slide, ML, 4.44, 5.85, 0.3, "HOW AD REQUESTS END", size=9.5, bold=True, colour=ACCENT)
+    status = pd.DataFrame({
+        "status": [str(v) for v in st["status"]],
+        "events": [f"{int(v):,}" for v in st["events"]],
+        "% of events": [f"{v:.1f}%" for v in st["pct_of_events"]],
+        "players": [f"{int(v):,}" for v in st["players"]],
+    })
+    table(slide, status, ML, 4.76, 5.85, col_widths=[0.26, 0.26, 0.24, 0.24], font=9.5, row_h=0.30,
+          force_right=True)
+
+    rw = load("q1d_rewarded_ads__ad_reward_by_type")
+    textbox(slide, 6.80, 4.44, 5.9, 0.3, "WHAT AN AD PAYS, BY REWARD TYPE", size=9.5, bold=True,
+            colour=ACCENT)
+    reward = pd.DataFrame({
+        "reward": [str(v) for v in rw["reward_type"]],
+        "events": [f"{int(v):,}" for v in rw["events"]],
+        "avg": [f"{v:,.1f}" for v in rw["avg_reward"]],
+        "median": [f"{v:,.1f}" for v in rw["median_reward"]],
+    })
+    table(slide, reward, 6.80, 4.76, 5.9, col_widths=[0.34, 0.24, 0.21, 0.21], font=9.5, row_h=0.30,
+          force_right=True)
     return slide
 
 
 def slide_dq(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  data quality", "Six defects, each with a decision")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  data quality", "Six defects, each with a decision",
+                           "Source: q0_data_quality__dq01..dq16, one block each in "
+                           "sql/q0_data_quality.sql.")
     rows = [
         ("ad_view timestamps", "+8h vs every table, 7,732 rows on 2026-05-01", "re-based \u22128h"),
         ("sale_flag on refunds", "inflates sale days 16 \u2192 58", "windows from positive rows only"),
@@ -861,7 +943,10 @@ def slide_dq(prs, n, s):
 
 def slide_d2a(prs, n, s):
     slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 2(a)",
-                           "ARPDAU, tier by tier, and what moved the mix")
+                           "ARPDAU, tier by tier, and what moved the mix",
+                           "Source: q2a_arpdau_mix__02_arpdau_by_tier, "
+                           "__06_decomposition_identity, __07_denominator_check, "
+                           "__08_install_mix_drift.")
     tier = load("q2a_arpdau_mix__02_arpdau_by_tier")
     t = pd.DataFrame({
         "tier": [f"{int(v)}" for v in tier["country_tier"]],
@@ -873,11 +958,12 @@ def slide_d2a(prs, n, s):
     })
     table(slide, t, ML, 1.52, 6.75, col_widths=[0.07, 0.19, 0.19, 0.12, 0.215, 0.215],
           font=9.5, row_h=0.31, force_right=True)
+    tier4 = tier.loc[tier.country_tier == 4].iloc[0]
     textbox(slide, ML, 3.30, 6.75, 0.62,
             "Every tier earns at least as much per DAU at the end of the window as at the "
             "start. What moved is the denominator: tier 4 went from "
-            f"{float(tier.dau_share_first_pct.iloc[3]):.1f}% of DAU to "
-            f"{float(tier.dau_share_last_pct.iloc[3]):.1f}%.",
+            f"{float(tier4.dau_share_first_pct):.1f}% of DAU to "
+            f"{float(tier4.dau_share_last_pct):.1f}%.",
             size=10.5, colour=GREY, spacing=1.12)
 
     ident = load("q2a_arpdau_mix__06_decomposition_identity").iloc[0]
@@ -891,14 +977,20 @@ def slide_d2a(prs, n, s):
     def signed(v: float) -> str:
         return ("+" if v > 0 else "") + money(v, 4)
 
+    def signed_pct(v: float) -> str:
+        return ("+" if v > 0 else "") + f"{v:.1f}%"
+
     d = pd.DataFrame({
         "step": ["ARPDAU, first 30 days", "within-tier monetisation", "mix of players",
                  "interaction", "ARPDAU, last 30 days"],
         "effect": [f"${start:.4f}", signed(within), signed(mix), signed(inter),
                    f"${end:.4f}"],
-        "as % of opening rate": ["", pct(float(ident.within_tier_pct)),
-                                 pct(float(ident.mix_pct)), "",
-                                 pct(float(ident.total_pct))],
+        # The interaction share is not its own CSV column; it is the same 100 * term /
+        # opening rate basis as the other rows, so the column adds to the total.
+        "as % of opening rate": ["", signed_pct(float(ident.within_tier_pct)),
+                                 signed_pct(float(ident.mix_pct)),
+                                 signed_pct(100 * inter / start),
+                                 signed_pct(float(ident.total_pct))],
     })
     table(slide, d, ML, 4.06, 6.75, col_widths=[0.52, 0.26, 0.22], font=9.5, row_h=0.29,
           force_right=True)
@@ -912,7 +1004,8 @@ def slide_d2a(prs, n, s):
             f"\u2248 {end:.4f}.",
             size=10, colour=GREY, spacing=1.12)
 
-    drift = load("q2a_arpdau_mix__08_install_mix_drift")
+    drift = load("q2a_arpdau_mix__08_install_mix_drift").sort_values("install_month")
+    first, last = drift.iloc[0], drift.iloc[-1]
     m = pd.DataFrame({
         "month": [str(v)[:7] for v in drift["install_month"]],
         "installs": [f"{int(v):,}" for v in drift["installs"]],
@@ -927,10 +1020,10 @@ def slide_d2a(prs, n, s):
     textbox(slide, 7.55, 3.34, 5.15, 1.05,
             f"March and April installs are three to four times January's, and they arrive "
             f"through paid_video into tier 4: April is "
-            f"{float(drift.paid_video_share_pct.iloc[-1]):.1f}% paid_video and "
-            f"{float(drift.tier4_share_pct.iloc[-1]):.1f}% tier-4, against January's "
-            f"{float(drift.paid_video_share_pct.iloc[0]):.1f}% and "
-            f"{float(drift.tier4_share_pct.iloc[0]):.1f}%.",
+            f"{float(last['paid_video_share_pct']):.1f}% paid_video and "
+            f"{float(last['tier4_share_pct']):.1f}% tier-4, against January's "
+            f"{float(first['paid_video_share_pct']):.1f}% and "
+            f"{float(first['tier4_share_pct']):.1f}%.",
             size=10.5, colour=INK, spacing=1.12)
     textbox(slide, 7.55, 4.52, 5.15, 0.3, "AND THE DENOMINATOR ITSELF", size=9.5, bold=True,
             colour=ACCENT)
@@ -945,7 +1038,10 @@ def slide_d2a(prs, n, s):
 
 
 def slide_d2b(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 2(b)", "The pull-forward counterfactual, window by window")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 2(b)",
+                           "The pull-forward counterfactual, window by window",
+                           "Source: q2b_sales_pullforward__09_sale_window_counterfactual, "
+                           "__14_schedule_learning_trend.")
     d = load("q2b_sales_pullforward__09_sale_window_counterfactual")
     d = d[["window_id", "window_start", "sale_day_revenue", "counterfactual_day_revenue",
            "excess_revenue", "pre_window_shortfall", "post_window_shortfall",
@@ -978,7 +1074,10 @@ def slide_d2b(prs, n, s):
 
 
 def slide_d3(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 3", "Standardised channel metrics, all three")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 3",
+                           "Standardised channel metrics, all three",
+                           "Source: q3_channel_quality__crude_vs_standardized, "
+                           "__standardized_excluding_thin_cells.")
     d = load("q3_channel_quality__crude_vs_standardized")
     names = {"revenue_per_install_30": ("revenue / install", 0),
              "payer_conversion_30": ("payer conversion", 1),
@@ -1025,7 +1124,10 @@ def slide_d3(prs, n, s):
 
 
 def slide_d4(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 4", "Model detail and where it is weak")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 4",
+                           "Model detail and where it is weak",
+                           "Source: q4_churn_model__coefficients, __model_summary, "
+                           "__calibration, __threshold_curve.")
     co = load("q4_churn_model__coefficients")
     co = co[co["feature"] != "const"].head(9).copy()
     co["OR"] = co["odds_ratio"].map(lambda v: f"{v:.2f}")
@@ -1059,7 +1161,9 @@ def slide_d4(prs, n, s):
 
 def slide_d4b(prs, n, s):
     slide = appendix_shell(prs, n, "Appendix  \u00b7  deliverable 4b (optional)",
-                          "90-day value: 12% of installs can be labelled at all")
+                           "90-day value: 12% of installs can be labelled at all",
+                           "Source: q4b_ltv__model_summary, __capture_curve, "
+                           "__02_cohort_vs_population.")
     cap = load("q4b_ltv__capture_curve")
     cap = cap.rename(columns={
         "top_share_of_installs": "top %",
@@ -1101,7 +1205,9 @@ def slide_d4b(prs, n, s):
 
 def slide_judgement(prs, n, s):
     slide = appendix_shell(prs, n, "Appendix  \u00b7  judgement calls",
-                           "Six calls I made, and why")
+                           "Six calls I made, and why",
+                           "Each call is implemented in sql/00_views.sql or code/; the slide "
+                           "that uses it carries the numbers.")
     textbox(slide, ML, 1.46, CW, 0.3,
             "Collected here because the argument for each one sits on the slide that uses "
             "it; every row names the choice, the reason, and what would have changed it.",
@@ -1138,7 +1244,10 @@ def slide_judgement(prs, n, s):
 
 
 def slide_deadends(prs, n, s):
-    slide = appendix_shell(prs, n, "Appendix  \u00b7  dead ends and next week", "What I tried, and what I would do next")
+    slide = appendix_shell(prs, n, "Appendix  \u00b7  dead ends and next week",
+                           "What I tried, and what I would do next",
+                           "Every item above is a query or a script in this repo; README lists "
+                           "the run order.")
     textbox(slide, ML, 1.54, 5.9, 0.3, "DEAD ENDS", size=9.5, bold=True, colour=ACCENT)
     bullets(slide, ML, 1.86, 5.9, 3.4, [
         ("Per-country ARPDAU.", "Too few transactions per country per month; the series is noise "
@@ -1150,7 +1259,7 @@ def slide_deadends(prs, n, s):
         ("A single regression on 90-day revenue.", "Ranks worse than the day-7-spend heuristic; "
                                                    "the two-part split lifted the top decile, "
                                                    "not the global rank."),
-    ], size=11, gap=9)
+    ], size=11.5, gap=26)
     x = 6.9
     textbox(slide, x, 1.54, 5.6, 0.3, "WITH ANOTHER WEEK", size=9.5, bold=True, colour=ACCENT)
     bullets(slide, x, 1.86, 5.6, 3.4, [
@@ -1162,11 +1271,17 @@ def slide_deadends(prs, n, s):
                                                   "and the bid rule have to be re-estimated."),
         ("Test the churn score on a live cell.", "Score \u2265 0.30 on a 5% holdout, measure "
                                                  "incremental retention, not correlation."),
-    ], size=11, gap=9)
-    textbox(slide, ML, 5.30, CW, 0.9,
+    ], size=11.5, gap=26)
+    box = slide.shapes.add_shape(1, Inches(ML), Inches(5.28), Inches(CW), Inches(1.05))
+    box.fill.solid()
+    box.fill.fore_color.rgb = LIGHT
+    box.line.fill.background()
+    box.shadow.inherit = False
+    rule(slide, ML, 5.28, 0.055, ACCENT, 1.05)
+    textbox(slide, ML + 0.30, 5.32, CW - 0.60, 0.97,
             "Everything above is a query or a script in this repo. The deck is regenerated by "
             "make all, so a changed number changes the argument, not just the slide.",
-            size=11, colour=GREY, spacing=1.15)
+            size=13, colour=INK, spacing=1.2, anchor=MSO_ANCHOR.MIDDLE)
     return slide
 
 
