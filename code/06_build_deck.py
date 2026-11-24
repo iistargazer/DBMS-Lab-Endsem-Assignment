@@ -698,14 +698,16 @@ def slide_method(prs, n, s):
                    "5 model files", "this deck"],
     }), x, 1.88, 5.6, col_widths=[0.42, 0.58], font=9.5, row_h=0.34)
     query_files = len(list((ROOT / "sql").glob("q*.sql")))
+    n_csv = len(list(TABLES.glob("*.csv")))
     textbox(slide, ML, 4.42, CW, 0.3, "WHAT IS IN THE REPO", size=9.5, bold=True, colour=ACCENT)
     repo = pd.DataFrame({
         "path": ["data/", "sql/", "code/", "outputs/", "deck/"],
         "contents": [
-            "source extracts (three CSV, two recovered from PDF) and warehouse.duckdb",
+            "parquet snapshots (raw inputs gitignored), then warehouse.duckdb",
             f"00_views.sql with every cleaning rule, then {query_files} query files in named blocks",
             "the six pipeline steps, in the order make runs them",
-            f"{s['blocks']} CSV tables and 5 figures, all regenerated; none saved by hand",
+            f"{n_csv} CSV tables ({s['blocks']} query results + {n_csv - s['blocks']} model "
+            f"outputs) and 5 figures, all regenerated; none saved by hand",
             "DBMS_EndSem_Deck.pptx (readout + appendix) and DBMS_EndSem_Readout.pptx",
         ],
     })
@@ -788,7 +790,8 @@ def slide_d1b(prs, n, s):
         ("Left edge.", "Activity starts 2026-01-01, so the 16,000 pre-window installs have no "
                        "day 1/7/14/30. They are excluded, not shown as 0%."),
         ("Right edge.", "A cell is blank unless every player in the cohort has had N days of "
-                        "observation. No zeros are substituted for unobserved days."),
+                        "observation. No zeros are substituted for unobserved days. The table "
+                        "shows the 11 most recent weeks; all 18 rows are in the CSV."),
     ], size=11, gap=9)
     textbox(slide, x, 4.66, 4.4, 0.3, "READ", size=9.5, bold=True, colour=ACCENT)
     textbox(slide, x, 4.98, 4.4, 1.1,
@@ -919,7 +922,8 @@ def slide_dq(prs, n, s):
         ("ad_view timestamps", "+8h vs every table, 7,732 rows on 2026-05-01", "re-based \u22128h"),
         ("sale_flag on refunds", "inflates sale days 16 \u2192 58", "windows from positive rows only"),
         ("duplicate purchase_id", "122 extra rows, ~$1.8k", "keep earliest, dedupe"),
-        ("purchases before install", "110 players", "excluded from time-to-first-purchase"),
+        ("purchases before install", "110 players (67 in the 1(c) cohort)",
+         "own bucket in 1(c), dropped from the median"),
         ("purchases left-truncated", "nothing before 2026-01-01", "restrict cohort measures"),
         ("revenue without a session", "41.2% of sale-day txns, 15.4% of revenue",
          "purchase rate counts active buyers only"),
@@ -962,7 +966,7 @@ def slide_dq(prs, n, s):
         ],
         "decision": [
             "netted out of every revenue figure",
-            "outside the 120-day window, excluded",
+            "all land inside the window once re-based, so none are dropped",
             "read as a period marker, not a discount",
             "kept as non-retained, never dropped",
         ],
@@ -1147,10 +1151,12 @@ def slide_d3(prs, n, s):
          f"{s['video_ads']:.2f} vs {s['organic_ads']:.2f} completed ads per install, "
          f"and {s['video_active']:.2f} vs {s['organic_active']:.2f} active days."),
     ], size=10.5, gap=8)
-    textbox(slide, x, 5.05, 4.3, 1.1,
-            "24 cells, 3 channels, 8 platform \u00d7 tier strata. Thin cells (under 250 installs) are "
-            "flagged and the standardisation is re-run without them: the largest movement is 0.07 "
-            "(paid_social's ad rate); paid_video does not move.", size=10, colour=GREY, spacing=1.12)
+    textbox(slide, x, 5.05, 4.3, 1.4,
+            "24 cells, 8 platform \u00d7 tier strata; dropping thin cells moves no ranking (largest "
+            "shift 0.07, paid_social's ad rate). What would settle the rest is a randomised "
+            "channel allocation, or a campaign holdout with cost per install attached: tier mix is "
+            "observable and adjusted for, creative and country-level selection are not.",
+            size=9.5, colour=GREY, spacing=1.1)
     return slide
 
 

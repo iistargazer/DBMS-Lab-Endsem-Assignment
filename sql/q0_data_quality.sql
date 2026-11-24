@@ -63,6 +63,11 @@ SELECT 'ad_view (after -8h)',
        (SELECT count(DISTINCT extract(hour FROM ts_utc)) FROM v_ad);
 
 -- name: dq06_ad_rows_outside_window
+-- Counted on the raw clock, to size the problem before the fix: 7,732 rows sit
+-- after 2026-04-30 and every one of them is on 2026-05-01 between 00:00 and
+-- 07:59 -- the +8h offset from dq05, not a month of real activity. After v_ad
+-- subtracts the 8 hours they land on 2026-04-30 16:00-23:59, inside the window,
+-- so the correction recovers those rows rather than discarding them.
 SELECT count(*) AS rows_after_window_end,
        min(event_ts::VARCHAR) AS first_such_ts,
        max(event_ts::VARCHAR) AS last_such_ts

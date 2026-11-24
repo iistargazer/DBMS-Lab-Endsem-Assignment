@@ -243,7 +243,9 @@ than the current one.
 7,732 rows onto 2026-05-01; 226 refund rows after dedupe (228 in the raw table); 122
 duplicate `purchase_id`s; `sale_flag`
 also fires on refund rows, which inflates a naive sale-day count from 16 to 58; 110
-players with purchases dated before their install date; purchases left-truncated at
+players with purchases dated before their install date (the 67 inside the
+time-to-first-purchase cohort get their own bucket rather than being folded into
+day 0); purchases left-truncated at
 2026-01-01, so time-to-first-purchase must exclude pre-window installs; a `currency_spend`
 GRIND row at 75.8M against a p99.9 of 3,229; two days with zero ad events (5–6 March)
 while DAU held; and the brief's claim that `country_tier` is null for non-purchasers,

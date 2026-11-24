@@ -1,5 +1,6 @@
 bucket,players,pct_of_eligible
-0 (install day),473,1.3
+before install (data error),67,0.2
+0 (install day),406,1.1
 1,310,0.8
 2-3,456,1.2
 4-7,798,2.1

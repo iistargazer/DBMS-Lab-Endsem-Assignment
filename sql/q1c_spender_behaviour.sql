@@ -8,6 +8,12 @@
 -- "Payers only" is defined on net revenue, so purchases that were fully refunded
 -- drop out: 11,054 players have a positive purchase, and 120 of those gave back at
 -- least what they spent, leaving 10,934 with net revenue above zero.
+--
+-- Time to first purchase is measured from install_date, and 110 players in the
+-- whole extract have a first purchase dated *before* their install (dq04). Those
+-- gaps are not measurable -- install day would be a lie and zero would be worse --
+-- so the distribution gives them their own bucket and the summary excludes them
+-- from the mean and quantiles while still reporting how many there are.
 
 -- name: revenue_concentration
 WITH payer_totals AS (
@@ -71,8 +77,9 @@ eligible AS (
     SELECT * FROM base WHERE follow_up_days >= 30
 ),
 bucketed AS (
-    SELECT CASE WHEN first_purchase_date IS NULL THEN 'never paid'
-                WHEN days_to_first <= 0 THEN '0 (install day)'
+                SELECT CASE WHEN first_purchase_date IS NULL THEN 'never paid'
+                WHEN days_to_first < 0 THEN 'before install (data error)'
+                WHEN days_to_first = 0 THEN '0 (install day)'
                 WHEN days_to_first = 1 THEN '1'
                 WHEN days_to_first <= 3 THEN '2-3'
                 WHEN days_to_first <= 7 THEN '4-7'
@@ -96,16 +103,24 @@ WITH base AS (
     FROM player_profile p
     WHERE p.install_date >= DATE '2026-01-01'
       AND date_diff('day', p.install_date, DATE '2026-04-30') >= 30
+),
+measurable AS (
+    SELECT * FROM base WHERE first_purchase_date IS NULL OR days_to_first >= 0
 )
-SELECT count(*) AS eligible_players,
-       count(first_purchase_date) AS players_who_paid,
-       round(100.0 * count(first_purchase_date) / count(*), 2) AS pct_who_ever_paid,
-       round(100.0 * (count(*) - count(first_purchase_date)) / count(*), 2) AS pct_never_paid,
+SELECT (SELECT count(*) FROM base) AS eligible_players,
+       (SELECT count(first_purchase_date) FROM base) AS players_who_paid,
+       round(100.0 * (SELECT count(first_purchase_date) FROM base)
+             / (SELECT count(*) FROM base), 2) AS pct_who_ever_paid,
+       round(100.0 * ((SELECT count(*) FROM base)
+                      - (SELECT count(first_purchase_date) FROM base))
+             / (SELECT count(*) FROM base), 2) AS pct_never_paid,
+       (SELECT count(*) FROM base) - (SELECT count(*) FROM measurable)
+             AS players_first_purchase_before_install,
        round(avg(days_to_first), 1) AS mean_days_to_first,
        round(quantile_cont(days_to_first, 0.25), 0) AS p25_days,
        round(quantile_cont(days_to_first, 0.50), 0) AS median_days,
        round(quantile_cont(days_to_first, 0.75), 0) AS p75_days
-FROM base;
+FROM measurable;
 
 -- name: repeat_purchase_gap
 -- Window function rather than a self-join: one ordered pass per player.

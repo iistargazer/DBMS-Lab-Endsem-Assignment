@@ -21,8 +21,9 @@ Each (stratum, channel) cell is resampled with its own indices, and the crude an
 mix-standardised metrics are recomputed on every replicate before the channels are
 differenced. So the difference keeps the joint behaviour of the shared mix weights
 -- the mixture's own sampling error cancels in the contrast instead of being
-counted twice, which is what makes the differenced interval tighter than two
-marginal intervals added in quadrature -- while no synthetic player is shared
+counted twice, which is what makes the differenced interval tighter than the two
+marginal half-widths added together (0.33 vs 0.44 on revenue per install) --
+while no synthetic player is shared
 between channels, so one channel's lucky draw cannot flatter the other. Resampling
 within cells also respects the design: a player belongs to exactly one cell, so
 cells are independent and can be resampled separately.
