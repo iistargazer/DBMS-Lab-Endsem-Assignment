@@ -1,0 +1,6 @@
+# GitHub's Linguist marks SQL as type: data, so .sql files are excluded from the
+# repository language bar by default. This project's deliverable is the SQL, so
+# force it to be counted, and keep the Python build/analysis harness out of the bar
+# (the scripts remain fully visible in code/).
+*.sql linguist-detectable=true
+*.py  linguist-detectable=false
